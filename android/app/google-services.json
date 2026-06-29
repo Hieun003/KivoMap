@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "253685227024",
+    "project_id": "status-spices",
+    "storage_bucket": "status-spices.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253685227024:android:0a8479cdb2068c3a54b495",
+        "android_client_info": {
+          "package_name": "com.example.kivo_map"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwZx7v7DqHD9m0eoPTI4ybO-buufke2FM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
