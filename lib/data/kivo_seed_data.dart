@@ -1,11 +1,11 @@
-const kivoSeedVersion = '2026-06-29-firestore-mvp-002';
+const kivoSeedVersion = '2026-06-30-firestore-iconkey-003';
 
 const seedClusters = [
   {
     'id': 'cluster_airport_checkin',
     'category': 'TRAVEL',
     'title': 'Airport Check-in',
-    'iconKey': 'flight_takeoff',
+    'iconKey': 'airport_check_in',
     'description': 'Handle luggage, documents, and security at the airport.',
     'orderIndex': 1,
   },
@@ -20,6 +20,9 @@ const seedVocabularies = [
     'pronunciation': '/PAS-port/',
     'example': 'Please show your passport at the counter.',
     'displayLabel': 'passport / ID',
+    'iconKey': 'identity_document',
+    'defaultIconKey': 'identity_document',
+    'senseKey': 'travel_identity_document',
     'orderIndex': 1,
   },
   {
@@ -30,6 +33,9 @@ const seedVocabularies = [
     'pronunciation': '/LUG-ij/',
     'example': 'You can check in your luggage here.',
     'displayLabel': 'luggage / bag',
+    'iconKey': 'luggage',
+    'defaultIconKey': 'luggage',
+    'senseKey': 'travel_baggage',
     'orderIndex': 2,
   },
   {
@@ -40,6 +46,9 @@ const seedVocabularies = [
     'pronunciation': '/si-KYUR-i-tee/',
     'example': 'Go through the security checkpoint.',
     'displayLabel': 'security / checkpoint',
+    'iconKey': 'security_check',
+    'defaultIconKey': 'security_check',
+    'senseKey': 'airport_security_process',
     'orderIndex': 3,
   },
   {
@@ -50,6 +59,9 @@ const seedVocabularies = [
     'pronunciation': '/BOR-ding pass/',
     'example': 'Keep your boarding pass ready.',
     'displayLabel': 'boarding pass / gate',
+    'iconKey': 'ticket',
+    'defaultIconKey': 'ticket',
+    'senseKey': 'flight_boarding_document',
     'orderIndex': 4,
   },
   {
@@ -60,6 +72,9 @@ const seedVocabularies = [
     'pronunciation': '/KOWN-ter/',
     'example': 'The check-in counter opens at six.',
     'displayLabel': 'counter / check-in',
+    'iconKey': 'check_in_counter',
+    'defaultIconKey': 'check_in_counter',
+    'senseKey': 'service_counter',
     'orderIndex': 5,
   },
 ];
@@ -75,6 +90,7 @@ const seedKnowledgeLinks = [
     'maskedText':
         'We need to verify your [ ? ] before printing the boarding pass.',
     'answerLabel': 'passport / ID',
+    'contextualIconKey': 'identity_document',
     'keywords': ['verify', 'boarding pass'],
     'relationType': 'CONTEXT',
   },
@@ -85,6 +101,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Please keep your passport open at the photo page.',
     'maskedText': 'Please keep your [ ? ] open at the photo page.',
     'answerLabel': 'passport / ID',
+    'contextualIconKey': 'identity_document',
     'keywords': ['photo page'],
     'relationType': 'CONTEXT',
   },
@@ -95,6 +112,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Your passport name must match the ticket name.',
     'maskedText': 'Your [ ? ] name must match the ticket name.',
     'answerLabel': 'passport / ID',
+    'contextualIconKey': 'identity_document',
     'keywords': ['ticket name'],
     'relationType': 'CONTEXT',
   },
@@ -106,6 +124,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Put your luggage on the scale so we can weigh it.',
     'maskedText': 'Put your [ ? ] on the scale so we can weigh it.',
     'answerLabel': 'luggage / bag',
+    'contextualIconKey': 'luggage',
     'keywords': ['scale', 'weigh'],
     'relationType': 'CONTEXT',
   },
@@ -116,6 +135,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Your luggage is two kilos over the limit.',
     'maskedText': 'Your [ ? ] is two kilos over the limit.',
     'answerLabel': 'luggage / bag',
+    'contextualIconKey': 'luggage',
     'keywords': ['kilos', 'limit'],
     'relationType': 'CONTEXT',
   },
@@ -126,6 +146,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Fragile luggage should be marked before check-in.',
     'maskedText': 'Fragile [ ? ] should be marked before check-in.',
     'answerLabel': 'luggage / bag',
+    'contextualIconKey': 'luggage',
     'keywords': ['fragile', 'check-in'],
     'relationType': 'CONTEXT',
   },
@@ -138,6 +159,7 @@ const seedKnowledgeLinks = [
         'Go through security after you receive your boarding pass.',
     'maskedText': 'Go through [ ? ] after you receive your boarding pass.',
     'answerLabel': 'security / checkpoint',
+    'contextualIconKey': 'security_check',
     'keywords': ['go through', 'boarding pass'],
     'relationType': 'CONTEXT',
   },
@@ -148,6 +170,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Security may ask you to remove your laptop.',
     'maskedText': '[ ? ] may ask you to remove your laptop.',
     'answerLabel': 'security / checkpoint',
+    'contextualIconKey': 'security_officer',
     'keywords': ['remove', 'laptop'],
     'relationType': 'CONTEXT',
   },
@@ -158,6 +181,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'The security line is shorter near gate B.',
     'maskedText': 'The [ ? ] line is shorter near gate B.',
     'answerLabel': 'security / checkpoint',
+    'contextualIconKey': 'security_line',
     'keywords': ['line', 'gate'],
     'relationType': 'CONTEXT',
   },
@@ -169,6 +193,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Please have your boarding pass ready at the gate.',
     'maskedText': 'Please have your [ ? ] ready at the gate.',
     'answerLabel': 'boarding pass / gate',
+    'contextualIconKey': 'ticket',
     'keywords': ['ready', 'gate'],
     'relationType': 'CONTEXT',
   },
@@ -179,6 +204,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'You can show a digital boarding pass on your phone.',
     'maskedText': 'You can show a digital [ ? ] on your phone.',
     'answerLabel': 'boarding pass / gate',
+    'contextualIconKey': 'mobile_ticket',
     'keywords': ['digital', 'phone'],
     'relationType': 'CONTEXT',
   },
@@ -189,6 +215,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'The agent printed my boarding pass at the counter.',
     'maskedText': 'The agent printed my [ ? ] at the counter.',
     'answerLabel': 'boarding pass / gate',
+    'contextualIconKey': 'ticket',
     'keywords': ['printed', 'counter'],
     'relationType': 'CONTEXT',
   },
@@ -200,6 +227,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'Please proceed to the check-in counter with your bags.',
     'maskedText': 'Please proceed to the check-in [ ? ] with your bags.',
     'answerLabel': 'counter / check-in',
+    'contextualIconKey': 'check_in_counter',
     'keywords': ['proceed', 'bags'],
     'relationType': 'CONTEXT',
   },
@@ -210,6 +238,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'The counter closes 45 minutes before departure.',
     'maskedText': 'The [ ? ] closes 45 minutes before departure.',
     'answerLabel': 'counter / check-in',
+    'contextualIconKey': 'check_in_counter',
     'keywords': ['closes', 'departure'],
     'relationType': 'CONTEXT',
   },
@@ -220,6 +249,7 @@ const seedKnowledgeLinks = [
     'contextExample': 'There is a long queue at the counter this morning.',
     'maskedText': 'There is a long queue at the [ ? ] this morning.',
     'answerLabel': 'counter / check-in',
+    'contextualIconKey': 'queue',
     'keywords': ['queue', 'morning'],
     'relationType': 'CONTEXT',
   },
@@ -240,11 +270,14 @@ const seedContextDetails = [
   {
     'id': 'link_passport_002',
     'miniDialogue': [
-      {'speaker': 'Agent', 'text': 'Please open your passport to the photo page.'},
+      {
+        'speaker': 'Agent',
+        'text': 'Please open your passport to the photo page.',
+      },
       {'speaker': 'Traveler', 'text': 'Of course, one moment.'},
     ],
     'realWorldTip':
-        'The photo page is the main data page — agents need to verify your identity.',
+        'The photo page is the main data page - agents need to verify your identity.',
     'audioUrl': null,
   },
   {
@@ -277,7 +310,7 @@ const seedContextDetails = [
       {'speaker': 'Traveler', 'text': 'Can I move some items to my carry-on?'},
     ],
     'realWorldTip':
-        'Most airlines allow 20–23 kg for checked luggage. Excess weight incurs extra fees.',
+        'Most airlines allow 20-23 kg for checked luggage. Excess weight incurs extra fees.',
     'audioUrl': null,
   },
   {
@@ -321,7 +354,7 @@ const seedContextDetails = [
       {'speaker': 'Staff', 'text': 'Yes, use the priority lane on the left.'},
     ],
     'realWorldTip':
-        'Some airports have multiple security lanes — check for shorter queues.',
+        'Some airports have multiple security lanes - check for shorter queues.',
     'audioUrl': null,
   },
   // --- boarding_pass (3 details) ---
@@ -373,22 +406,16 @@ const seedContextDetails = [
     'id': 'link_counter_002',
     'miniDialogue': [
       {'speaker': 'Agent', 'text': 'The counter closes in 10 minutes.'},
-      {
-        'speaker': 'Traveler',
-        'text': 'I am here now. Can I still check in?',
-      },
+      {'speaker': 'Traveler', 'text': 'I am here now. Can I still check in?'},
     ],
     'realWorldTip':
-        'Arrive at the counter at least 60–90 minutes before departure to avoid cutoff.',
+        'Arrive at the counter at least 60-90 minutes before departure to avoid cutoff.',
     'audioUrl': null,
   },
   {
     'id': 'link_counter_003',
     'miniDialogue': [
-      {
-        'speaker': 'Traveler',
-        'text': 'The queue at the counter is very long.',
-      },
+      {'speaker': 'Traveler', 'text': 'The queue at the counter is very long.'},
       {'speaker': 'Friend', 'text': 'Try the self-service kiosk instead.'},
     ],
     'realWorldTip':

@@ -144,6 +144,46 @@ class DatabaseEngineService {
       'updatedAt': now,
     };
 
+    batch.set(_clusters.doc('_schema'), {
+      ...schemaDoc,
+      'category': null,
+      'title': null,
+      'iconKey': null,
+      'description': null,
+      'orderIndex': 0,
+    }, SetOptions(merge: true));
+
+    batch.set(
+      _clusters.doc('_schema').collection('vocabularies').doc('_schema'),
+      {
+        ...schemaDoc,
+        'clusterId': '_schema',
+        'word': null,
+        'meaning': null,
+        'pronunciation': null,
+        'example': null,
+        'displayLabel': null,
+        'iconKey': null,
+        'defaultIconKey': null,
+        'senseKey': null,
+        'orderIndex': 0,
+        'isActive': true,
+      },
+      SetOptions(merge: true),
+    );
+
+    batch.set(_knowledgeLinks.doc('_schema'), {
+      ...schemaDoc,
+      'clusterId': null,
+      'vocabularyId': null,
+      'contextExample': null,
+      'maskedText': null,
+      'answerLabel': null,
+      'contextualIconKey': null,
+      'keywords': const <String>[],
+      'relationType': null,
+      'isActive': true,
+    }, SetOptions(merge: true));
     batch.set(
       _users.doc(userId).collection('repetition_states').doc('_schema'),
       {
