@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'app/navigation/main_navigation_shell.dart';
 import 'app/theme/kivo_theme.dart';
 
 import 'data/database_engine_service.dart';
@@ -29,14 +30,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'KivoMap Language',
       theme: KivoTheme.light,
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            'KivoMap Firestore DB Engine Ready',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-      ),
+      home: const MainNavigationShell(),
     );
   }
 }
