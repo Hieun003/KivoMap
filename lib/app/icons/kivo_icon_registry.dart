@@ -124,6 +124,8 @@ abstract final class KivoIconRegistry {
     'map': PhosphorIcons.mapTrifold,
     'discover': PhosphorIcons.compass,
     'review': PhosphorIcons.cards,
+    'treasure': PhosphorIcons.treasureChest,
+    'treasure_chest': PhosphorIcons.treasureChest,
     'progress': PhosphorIcons.path,
     'profile': PhosphorIcons.userCircle,
     'translation': PhosphorIcons.translate,
