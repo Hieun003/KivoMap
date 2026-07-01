@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../features/home/view/home_view.dart';
 import '../assets/image_paths.dart';
 import '../icons/kivo_icon_registry.dart';
 import '../routes/app_routes.dart';
@@ -46,12 +47,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       body: IndexedStack(
         index: _currentIndex,
         children: const [
-          _NavigationTabPlaceholder(
-            title: 'Khám phá',
-            subtitle: 'Home Dashboard sẽ được nối vào tab này.',
-            mascotPath: KivoImagePaths.kivoExplorer,
-            iconKey: 'discover',
-          ),
+          HomeView(),
           _NavigationTabPlaceholder(
             title: 'Kho báu',
             subtitle: 'Phần thưởng và vật phẩm học tập sẽ nằm ở đây.',
@@ -101,13 +97,7 @@ class _NavigationTabPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [KivoColors.lightSurface, KivoColors.cream],
-        ),
-      ),
+      decoration: const BoxDecoration(gradient: KivoGradients.lightBackground),
       child: SafeArea(
         bottom: false,
         child: Padding(

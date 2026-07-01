@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../icons/kivo_icon_registry.dart';
+import '../responsive/kivo_scale.dart';
 import '../theme/kivo_theme_tokens.dart';
 
 class KivoBottomNavItem {
@@ -32,18 +33,24 @@ class KivoBottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
           border: Border(
             top: BorderSide(color: KivoColors.lightBorder, width: 0.8),
           ),
-          boxShadow: KivoShadows.soft,
+          boxShadow: [
+            BoxShadow(
+              color: KivoColors.shadow.withAlpha(18),
+              blurRadius: KivoScale.r(16),
+              offset: Offset(0, KivoScale.h(-4)),
+            ),
+          ],
         ),
-        padding: const EdgeInsets.fromLTRB(
-          KivoSpacing.md,
-          KivoSpacing.xs,
-          KivoSpacing.md,
-          KivoSpacing.xs,
+        padding: EdgeInsets.fromLTRB(
+          KivoScale.w(20),
+          KivoScale.h(20),
+          KivoScale.w(20),
+          KivoScale.h(20),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -76,8 +83,19 @@ class _KivoBottomNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isSelected ? KivoColors.actionCyan : KivoColors.disabledText;
-    final tone = isSelected ? KivoIconTone.duotone : KivoIconTone.regular;
+    final color =
+    isSelected ? KivoColors.actionCyan : KivoColors.disabledText;
+
+    final tone =
+    isSelected ? KivoIconTone.duotone : KivoIconTone.regular;
+
+    final circleSize = isSelected
+        ? KivoScale.w(100)
+        : KivoScale.w(100);
+
+    final iconSize = isSelected
+        ? KivoScale.w(50)
+        : KivoScale.w(50);
 
     return Semantics(
       button: true,
@@ -85,49 +103,59 @@ class _KivoBottomNavButton extends StatelessWidget {
       label: item.semanticLabel,
       child: InkWell(
         onTap: onTap,
-        borderRadius: KivoRadii.chip,
-        child: SizedBox(
-          height: 68,
-          child: Stack(
-            alignment: Alignment.bottomCenter,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: KivoScale.h(6),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              AnimatedPositioned(
+
+              AnimatedContainer(
                 duration: KivoDurations.fast,
                 curve: Curves.easeOutCubic,
-                top: isSelected ? 2 : 10,
-                child: AnimatedContainer(
-                  duration: KivoDurations.fast,
-                  curve: Curves.easeOutCubic,
-                  width: isSelected ? 48 : 42,
-                  height: isSelected ? 48 : 42,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? KivoColors.softMintCard
-                        : Colors.transparent,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? KivoColors.actionCyan
-                          : KivoColors.disabledText,
-                      width: isSelected ? 3 : 2.4,
-                    ),
-                    boxShadow: isSelected ? KivoShadows.tealGlow : null,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    KivoIconRegistry.system(item.iconKey, tone: tone),
-                    size: isSelected ? 28 : 27,
+                width: circleSize,
+                height: circleSize,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? KivoColors.softMintCard
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                  border: Border.all(
                     color: color,
+                    width: isSelected ? 2.2 : 1.8,
                   ),
+                  boxShadow: isSelected
+                      ? [
+                    BoxShadow(
+                      color:
+                      KivoColors.tealShadow.withAlpha(35),
+                      blurRadius: KivoScale.r(14),
+                    ),
+                  ]
+                      : null,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  KivoIconRegistry.system(
+                    item.iconKey,
+                    tone: tone,
+                  ),
+                  color: color,
+                  size: iconSize,
                 ),
               ),
+
+              SizedBox(height: KivoScale.h(6)),
+
               AnimatedDefaultTextStyle(
                 duration: KivoDurations.fast,
                 curve: Curves.easeOutCubic,
                 style: KivoTextStyles.caption.copyWith(
                   color: color,
-                  fontSize: 13,
                   fontWeight: FontWeight.w800,
+                  fontSize: KivoScale.sp(12.5, min: 11),
                 ),
                 child: Text(
                   item.label,
