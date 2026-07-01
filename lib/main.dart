@@ -1,7 +1,12 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
+import 'app/bindings/home_binding.dart';
 import 'app/navigation/main_navigation_shell.dart';
+import 'app/responsive/kivo_scale.dart';
+import 'app/routes/app_routes.dart';
 import 'app/theme/kivo_theme.dart';
 
 import 'data/database_engine_service.dart';
@@ -27,10 +32,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'KivoMap Language',
-      theme: KivoTheme.light,
-      home: const MainNavigationShell(),
+    return ScreenUtilInit(
+      designSize: KivoScale.designSize,
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return GetMaterialApp(
+          title: 'KivoMap Language',
+          theme: KivoTheme.light,
+          initialRoute: AppRoutes.home,
+          debugShowCheckedModeBanner: false,
+          getPages: [
+            GetPage(
+              name: AppRoutes.home,
+              page: () => const MainNavigationShell(),
+              binding: HomeBinding(),
+            ),
+          ],
+        );
+      },
     );
   }
 }

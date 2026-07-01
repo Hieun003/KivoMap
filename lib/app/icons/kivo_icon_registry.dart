@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+﻿import 'package:flutter/widgets.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 enum KivoIconTone { regular, bold, fill, duotone }
@@ -73,6 +73,8 @@ abstract final class KivoIconRegistry {
     'restaurant': PhosphorIcons.forkKnife,
     'ordering_food': PhosphorIcons.forkKnife,
     'shopping': PhosphorIcons.shoppingBag,
+    'secret_path': PhosphorIcons.path,
+    'secret_passage': PhosphorIcons.path,
     'work': PhosphorIcons.briefcase,
     'office': PhosphorIcons.briefcase,
     'transport': PhosphorIcons.bus,
