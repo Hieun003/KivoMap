@@ -43,6 +43,7 @@ class HomeView extends GetView<HomeViewModel> {
             onStartLearning: controller.startLearning,
             onStartReview: controller.startReview,
             onCategorySelected: controller.selectCategory,
+            onTopicSelected: controller.openTopic,
           );
         }),
       ),
@@ -56,12 +57,14 @@ class _HomeDashboardContent extends StatelessWidget {
     required this.onStartLearning,
     required this.onStartReview,
     required this.onCategorySelected,
+    required this.onTopicSelected,
   });
 
   final HomeDashboardState state;
   final VoidCallback onStartLearning;
   final VoidCallback onStartReview;
   final ValueChanged<HomeCategoryChipData> onCategorySelected;
+  final ValueChanged<HomeContextTopicData> onTopicSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +105,10 @@ class _HomeDashboardContent extends StatelessWidget {
                 const _NoContextSectionsState()
               else
                 for (final section in state.contextSections) ...[
-                  HomeContextMapSection(section: section),
+                  HomeContextMapSection(
+                    section: section,
+                    onTopicSelected: onTopicSelected,
+                  ),
                   SizedBox(height: KivoScale.h(22)),
                 ],
             ],

@@ -7,9 +7,14 @@ import '../../../app/theme/kivo_theme_tokens.dart';
 import '../view_model/home_view_state.dart';
 
 class HomeContextMapSection extends StatelessWidget {
-  const HomeContextMapSection({super.key, required this.section});
+  const HomeContextMapSection({
+    super.key,
+    required this.section,
+    required this.onTopicSelected,
+  });
 
   final HomeContextSectionData section;
+  final ValueChanged<HomeContextTopicData> onTopicSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +51,7 @@ class HomeContextMapSection extends StatelessWidget {
                     _ContextTopicTile(
                       item: section.items[index],
                       isOffset: index.isOdd,
+                      onSelected: onTopicSelected,
                     ),
                     if (index != section.items.length - 1)
                       SizedBox(height: KivoScale.h(16)),
@@ -88,10 +94,15 @@ class _JourneyHeader extends StatelessWidget {
 }
 
 class _ContextTopicTile extends StatelessWidget {
-  const _ContextTopicTile({required this.item, required this.isOffset});
+  const _ContextTopicTile({
+    required this.item,
+    required this.isOffset,
+    required this.onSelected,
+  });
 
   final HomeContextTopicData item;
   final bool isOffset;
+  final ValueChanged<HomeContextTopicData> onSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -99,68 +110,74 @@ class _ContextTopicTile extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(left: isOffset ? KivoScale.w(18) : 0),
-      child: Container(
-        key: ValueKey('home-topic-${item.iconKey}'),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [palette.soft.withAlpha(210), Colors.white.withAlpha(238)],
-          ),
-          borderRadius: BorderRadius.circular(KivoScale.r(24)),
-          border: Border.all(color: palette.border.withAlpha(42), width: 0.9),
-          boxShadow: [
-            BoxShadow(
-              color: KivoColors.shadow.withAlpha(10),
-              blurRadius: KivoScale.r(14),
-              offset: Offset(0, KivoScale.h(6)),
+      child: GestureDetector(
+        onTap: () => onSelected(item),
+        child: Container(
+          key: ValueKey('home-topic-${item.iconKey}'),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                palette.soft.withAlpha(210),
+                Colors.white.withAlpha(238),
+              ],
             ),
-          ],
-        ),
-        padding: EdgeInsets.symmetric(
-          horizontal: KivoScale.w(16),
-          vertical: KivoScale.h(16),
-        ),
-        child: Row(
-          children: [
-            _TopicIllustration(iconKey: item.iconKey, palette: palette),
-            SizedBox(width: KivoScale.w(20)),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text.rich(
-                    TextSpan(
-                      text: item.title,
-                      children: [
-                        TextSpan(
-                          text: '  ${item.subtitle}',
-                          style: KivoTextStyles.body.copyWith(
-                            color: KivoColors.inkText.withAlpha(198),
-                            fontWeight: FontWeight.w600,
-                            fontSize: KivoScale.sp(16, min: 12),
-                          ),
-                        ),
-                      ],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: KivoTextStyles.cardTitle.copyWith(
-                      color: KivoColors.inkText,
-                      fontSize: KivoScale.sp(20.5, min: 15),
-                      height: 1.18,
-                    ),
-                  ),
-                  SizedBox(height: KivoScale.h(12)),
-                  _ProgressDots(
-                    learnedCount: item.learnedCount,
-                    totalCount: item.totalCount,
-                    color: palette.strong,
-                  ),
-                ],
+            borderRadius: BorderRadius.circular(KivoScale.r(24)),
+            border: Border.all(color: palette.border.withAlpha(42), width: 0.9),
+            boxShadow: [
+              BoxShadow(
+                color: KivoColors.shadow.withAlpha(10),
+                blurRadius: KivoScale.r(14),
+                offset: Offset(0, KivoScale.h(6)),
               ),
-            ),
-          ],
+            ],
+          ),
+          padding: EdgeInsets.symmetric(
+            horizontal: KivoScale.w(16),
+            vertical: KivoScale.h(16),
+          ),
+          child: Row(
+            children: [
+              _TopicIllustration(iconKey: item.iconKey, palette: palette),
+              SizedBox(width: KivoScale.w(20)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(
+                      TextSpan(
+                        text: item.title,
+                        children: [
+                          TextSpan(
+                            text: '  ${item.subtitle}',
+                            style: KivoTextStyles.body.copyWith(
+                              color: KivoColors.inkText.withAlpha(198),
+                              fontWeight: FontWeight.w600,
+                              fontSize: KivoScale.sp(16, min: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: KivoTextStyles.cardTitle.copyWith(
+                        color: KivoColors.inkText,
+                        fontSize: KivoScale.sp(20.5, min: 15),
+                        height: 1.18,
+                      ),
+                    ),
+                    SizedBox(height: KivoScale.h(12)),
+                    _ProgressDots(
+                      learnedCount: item.learnedCount,
+                      totalCount: item.totalCount,
+                      color: palette.strong,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
