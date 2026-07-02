@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
 import 'home_view_state.dart';
 
 class HomeViewModel extends GetxController {
@@ -43,6 +44,18 @@ class HomeViewModel extends GetxController {
 
   void startReview() {
     // Route target will be connected when Review Queue is implemented.
+  }
+
+  void openTopic(HomeContextTopicData topic) {
+    Get.toNamed(
+      AppRoutes.vocabularyPlanet,
+      arguments: {
+        'clusterId': topic.clusterId,
+        'title': topic.title,
+        'subtitle': topic.subtitle,
+        'iconKey': topic.iconKey,
+      },
+    );
   }
 
   HomeDashboardState? _buildFilteredState({

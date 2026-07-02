@@ -46,6 +46,28 @@ void main() {
     );
   });
 
+  testWidgets('opens vocabulary planet from airport topic', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('home-topic-airport_check_in')),
+      220,
+      scrollable: find.byWidgetPredicate(
+        (widget) =>
+            widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('home-topic-airport_check_in')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Thủ tục Sân Bay'), findsOneWidget);
+    expect(find.text('2 / 5'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('vocabulary-node-vocab_passport')),
+      findsOneWidget,
+    );
+  });
   testWidgets('shows empty knowledge banner state', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(

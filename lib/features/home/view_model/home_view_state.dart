@@ -64,6 +64,7 @@ class HomeDashboardState {
         accentColor: HomeAccentColor.blue,
         items: [
           HomeContextTopicData(
+            clusterId: 'cluster_airport_checkin',
             title: 'Thủ tục Sân Bay',
             subtitle: '(Airport Check-in)',
             iconKey: 'airport_check_in',
@@ -72,6 +73,7 @@ class HomeDashboardState {
             accentColor: HomeAccentColor.blue,
           ),
           HomeContextTopicData(
+            clusterId: 'cluster_hotel_booking',
             title: 'Đặt phòng Khách Sạn',
             subtitle: '(Hotel Booking)',
             iconKey: 'hotel_booking',
@@ -80,6 +82,7 @@ class HomeDashboardState {
             accentColor: HomeAccentColor.orange,
           ),
           HomeContextTopicData(
+            clusterId: 'cluster_train_station',
             title: 'Ga Tàu',
             subtitle: '(Train Station)',
             iconKey: 'train_station',
@@ -95,6 +98,7 @@ class HomeDashboardState {
         accentColor: HomeAccentColor.green,
         items: [
           HomeContextTopicData(
+            clusterId: 'cluster_ordering_food',
             title: 'Gọi món Nhà Hàng',
             subtitle: '(Ordering Food)',
             iconKey: 'ordering_food',
@@ -103,6 +107,7 @@ class HomeDashboardState {
             accentColor: HomeAccentColor.green,
           ),
           HomeContextTopicData(
+            clusterId: 'cluster_shopping',
             title: 'Mua Sắm',
             subtitle: '(Shopping)',
             iconKey: 'shopping',
@@ -118,6 +123,7 @@ class HomeDashboardState {
         accentColor: HomeAccentColor.purple,
         items: [
           HomeContextTopicData(
+            clusterId: 'cluster_secret_path',
             title: 'Cánh Cửa Bí Mật',
             subtitle: '(Secret Passage)',
             iconKey: 'secret_path',
@@ -176,6 +182,7 @@ class HomeContextSectionData {
 
 class HomeContextTopicData {
   const HomeContextTopicData({
+    required this.clusterId,
     required this.title,
     required this.subtitle,
     required this.iconKey,
@@ -184,6 +191,7 @@ class HomeContextTopicData {
     required this.accentColor,
   });
 
+  final String clusterId;
   final String title;
   final String subtitle;
   final String iconKey;
