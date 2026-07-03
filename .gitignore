@@ -55,3 +55,10 @@ docs/
 
 # Seed data
 kivo_seed_data.json
+
+# Local script secrets
+scripts/kivo_seed_image_generator/.env
+scripts/kivo_seed_image_generator/.kivo-generated-images/
+
+# Local scripts
+scripts/

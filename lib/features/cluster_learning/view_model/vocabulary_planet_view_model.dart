@@ -1,5 +1,7 @@
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
+
 import 'vocabulary_planet_view_state.dart';
 
 class VocabularyPlanetViewModel extends GetxController {
@@ -46,11 +48,9 @@ class VocabularyPlanetViewModel extends GetxController {
       return;
     }
 
-    Get.snackbar(
-      'Sẵn sàng khám phá',
-      '${node.label.replaceAll('\n', ' ')} sẽ mở Discover Matrix ở bước tiếp theo.',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1400),
+    Get.toNamed(
+      AppRoutes.discoveryMatrix,
+      arguments: {'clusterId': state.value?.clusterId, 'vocabularyId': node.id},
     );
   }
 
