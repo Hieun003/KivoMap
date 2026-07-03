@@ -39,6 +39,31 @@ The goal is not to gamify everything. The goal is to make learning feel approach
 | Journey | Progress appears through maps, clusters, gates, discovery states, and review paths. | Learning feels like returning to a place, not clearing a checklist. |
 | Companion | Kivo acts as a warm guide across normal learning and challenge moments. | The app feels friendly without hiding the learning goal. |
 
+## UI Design Preview
+
+> These are product UI designs. Flutter implementation is currently in progress, so these images show the intended interface direction rather than final runtime screenshots.
+
+<p align="center">
+  <img src="asset/UI/home_dashboard.png" alt="KivoMap Home Dashboard UI design" width="210" />
+  <img src="asset/UI/Vocabulary_Planet_Screen.png" alt="KivoMap Vocabulary Planet UI design" width="210" />
+  <img src="asset/UI/Discorver_Matrix_Screens.png" alt="KivoMap Discovery Matrix UI design" width="210" />
+</p>
+
+<p align="center">
+  <img src="asset/UI/Deep_Context_Screen.png" alt="KivoMap Deep Context UI design" width="210" />
+  <img src="asset/UI/review_screen.png" alt="KivoMap Review UI design" width="210" />
+  <img src="asset/UI/list_scret_cave.png" alt="KivoMap Passageway UI design" width="210" />
+</p>
+
+| Designed Experience | Purpose |
+| --- | --- |
+| Home Dashboard | Gives learners a friendly entry point into review, progress, and the context map. |
+| Vocabulary Planet | Turns a topic into a spatial vocabulary map instead of a flat word list. |
+| Discovery Matrix | Lets learners explore contextual links around one vocabulary item. |
+| Deep Context | Shows practical examples and meaning support inside a focused learning moment. |
+| Review | Reinforces memory through masked context prompts. |
+| Passageway | Adds a darker challenge layer after the core learning loop is stable. |
+
 ## How Kivo Works
 
 Imagine learning the word `airport`.
@@ -62,21 +87,6 @@ flowchart LR
 ```
 
 The learner does not only learn what a word means. They learn where it appears, what usually comes with it, and how to recognize it again later.
-
-## Product Preview
-
-<p align="center">
-  <img src="asset/icons/context_map.png" alt="Context map visual" width="180" />
-  <img src="asset/mascot/kivo_thinking.png" alt="Kivo thinking mascot" width="180" />
-  <img src="asset/story/mystery_stone_gate.png" alt="Mystery gate visual" width="180" />
-</p>
-
-| Experience | Preview Intent |
-| --- | --- |
-| Home / Journey | A friendly entry point into review, progress, and the context map. |
-| Vocabulary Planet | A topic-based map where words feel spatial and connected. |
-| Discovery Matrix | A focused exploration space around one vocabulary item. |
-| Passageway | A darker challenge layer that adds mystery after the core loop is stable. |
 
 ## Core Learning Loop
 
@@ -134,13 +144,14 @@ Out of scope for the MVP: social feeds, comments, follows, leaderboards, payment
 
 | Area | Status |
 | --- | --- |
-| Business Analysis | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ` Complete foundation |
-| Product Scope | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆ` MVP boundaries defined |
-| UI Direction | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘` Visual system documented |
-| Firestore Design | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘` Schema and seed data in progress |
-| Flutter UI | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘â–‘` Core screens in progress |
-| Review / SRS | `â–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘â–‘â–‘` Product flow defined, implementation ongoing |
-| Challenge Layer | `â–ˆâ–ˆâ–ˆâ–ˆâ–‘â–‘â–‘â–‘â–‘â–‘` Planned after the core learning loop is stable |
+| Business Analysis | `[##########]` Complete foundation |
+| Product Scope | `[##########]` MVP boundaries defined |
+| UI Design | `[##########]` Product screens designed |
+| UI Direction | `[#########-]` Visual system documented |
+| Firestore Design | `[#########-]` Schema and seed data in progress |
+| Flutter UI Implementation | `[#######---]` Core screens in progress |
+| Review / SRS | `[######----]` Product flow defined, implementation ongoing |
+| Challenge Layer | `[####------]` Planned after the core learning loop is stable |
 
 ## Visual Direction
 
@@ -189,7 +200,7 @@ Core rules:
 - Complete the core Discovery flow with deep context details.
 - Connect Review Queue to context-based SRS state updates.
 - Expand progress tracking across journey, streak, energy, and unlocked vocabulary.
-- Add real app screenshots to this README as screens stabilize.
+- Replace UI design previews with runtime screenshots as screens stabilize.
 - Build Passageway / Dark Challenge Mode after the learning loop is reliable.
 
 ## Run Locally
