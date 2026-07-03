@@ -52,3 +52,6 @@ app.*.map.json
 *.pptx
 *.ppt
 docs/
+
+# Seed data
+kivo_seed_data.json

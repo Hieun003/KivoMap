@@ -164,6 +164,7 @@ class DatabaseEngineService {
         'example': null,
         'displayLabel': null,
         'iconKey': null,
+        'imageUrl': null,
         'defaultIconKey': null,
         'senseKey': null,
         'orderIndex': 0,
@@ -176,6 +177,7 @@ class DatabaseEngineService {
       ...schemaDoc,
       'clusterId': null,
       'vocabularyId': null,
+      'anchorWord': null,
       'contextExample': null,
       'maskedText': null,
       'answerLabel': null,
@@ -183,6 +185,14 @@ class DatabaseEngineService {
       'keywords': const <String>[],
       'relationType': null,
       'isActive': true,
+    }, SetOptions(merge: true));
+
+    batch.set(_contextDetails.doc('_schema'), {
+      ...schemaDoc,
+      'knowledgeLinkId': null,
+      'miniDialogue': const <Map<String, String>>[],
+      'realWorldTip': null,
+      'audioUrl': null,
     }, SetOptions(merge: true));
     batch.set(
       _users.doc(userId).collection('repetition_states').doc('_schema'),
@@ -283,18 +293,20 @@ class DatabaseEngineService {
     await batch.commit();
   }
 
-  Future<QuerySnapshot<Map<String, dynamic>>> fetchClusters() {
-    return _clusters.orderBy('orderIndex').get();
+  Future<QuerySnapshot<Map<String, dynamic>>> fetchClusters({int limit = 20}) {
+    return _clusters.orderBy('orderIndex').limit(limit).get();
   }
 
   Future<QuerySnapshot<Map<String, dynamic>>> fetchClusterVocabularies(
-    String clusterId,
-  ) {
+    String clusterId, {
+    int limit = 30,
+  }) {
     return _clusters
         .doc(clusterId)
         .collection('vocabularies')
         .where('isActive', isEqualTo: true)
         .orderBy('orderIndex')
+        .limit(limit)
         .get();
   }
 
@@ -319,6 +331,7 @@ class DatabaseEngineService {
     final snapshot = await _knowledgeLinks
         .where('vocabularyId', isEqualTo: vocabularyId)
         .where('isActive', isEqualTo: true)
+        .limit(maxItems * 4)
         .get();
 
     final docs = [...snapshot.docs]..shuffle(Random());
@@ -340,6 +353,7 @@ class DatabaseEngineService {
         .collectionGroup('vocabularies')
         .where('clusterId', isEqualTo: clusterId)
         .where('isActive', isEqualTo: true)
+        .limit(12)
         .get();
   }
 
