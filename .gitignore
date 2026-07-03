@@ -55,3 +55,6 @@ docs/
 
 # Seed data
 kivo_seed_data.json
+
+# Scripts
+scripts/
