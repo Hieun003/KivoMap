@@ -21,14 +21,14 @@ class VocabularyPlanetNodeMap extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final mapWidth = constraints.maxWidth;
-        final isCompactSet = nodes.length <= 5;
+        final isCompactSet = nodes.length <= 6;
         final mapHeight = isCompactSet
-            ? math.max(mapWidth * 1.32, 500.0)
-            : math.max(mapWidth * 2.16, 760.0);
+            ? math.max(mapWidth * 1.34, 520.0)
+            : math.max(mapWidth * 1.78, 700.0);
         final starSize = _planetStarSize(mapWidth, isCompactSet: isCompactSet);
         final starCenter = Offset(
           mapWidth * 0.50,
-          mapHeight * (isCompactSet ? 0.50 : 0.46),
+          mapHeight * (isCompactSet ? 0.50 : 0.48),
         );
 
         return SizedBox(
@@ -39,7 +39,7 @@ class VocabularyPlanetNodeMap extends StatelessWidget {
               Positioned.fill(
                 child: CustomPaint(
                   painter: _PlanetDecorPainter(
-                    starCenterRatioY: isCompactSet ? 0.50 : 0.46,
+                    starCenterRatioY: isCompactSet ? 0.50 : 0.48,
                   ),
                 ),
               ),
@@ -135,19 +135,8 @@ class _PositionedPlanetNode extends StatelessWidget {
     double mapHeight,
     Offset starCenter,
   ) {
-    if (totalCount == 5) {
-      final positions = <Offset>[
-        Offset(mapWidth * 0.50, mapHeight * 0.14),
-        Offset(mapWidth * 0.80, mapHeight * 0.36),
-        Offset(mapWidth * 0.68, mapHeight * 0.78),
-        Offset(mapWidth * 0.32, mapHeight * 0.78),
-        Offset(mapWidth * 0.20, mapHeight * 0.36),
-      ];
-      return positions[index];
-    }
-
-    final radiusX = mapWidth * 0.32;
-    final radiusY = mapHeight * 0.33;
+    final radiusX = mapWidth * 0.34;
+    final radiusY = mapHeight * 0.29;
     final startAngle = -math.pi / 2;
     final angle = startAngle + (math.pi * 2 * index / totalCount);
     return Offset(
@@ -161,9 +150,9 @@ class _PositionedPlanetNode extends StatelessWidget {
     double designSize, {
     required bool useCompactOrbit,
   }) {
-    final denominator = useCompactOrbit ? 500.0 : 540.0;
-    final minSize = useCompactOrbit ? 82.0 : 72.0;
-    final maxSize = useCompactOrbit ? 120.0 : 116.0;
+    final denominator = useCompactOrbit ? 610.0 : 560.0;
+    final minSize = useCompactOrbit ? 74.0 : 70.0;
+    final maxSize = useCompactOrbit ? 104.0 : 108.0;
     return (mapWidth * (designSize / denominator)).clamp(minSize, maxSize);
   }
 }
@@ -182,13 +171,12 @@ class _VocabularyPlanetNode extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = VocabularyNodePalette.fromNode(node);
-    final isLocked = node.status == VocabularyNodeStatus.locked;
     final label = node.label.replaceAll('\n', ' ');
 
     return Semantics(
       button: true,
       label: label,
-      enabled: !isLocked,
+      enabled: true,
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -344,6 +332,29 @@ class _PlanetDecorPainter extends CustomPainter {
     }
 
     final center = Offset(size.width * 0.50, size.height * starCenterRatioY);
+    final orbitPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = KivoColors.kivoTeal.withAlpha(34);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center,
+        width: size.width * 0.68,
+        height: size.height * 0.58,
+      ),
+      orbitPaint,
+    );
+    orbitPaint
+      ..strokeWidth = 0.8
+      ..color = KivoColors.warningGold.withAlpha(28);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center,
+        width: size.width * 0.48,
+        height: size.height * 0.40,
+      ),
+      orbitPaint,
+    );
     paint
       ..color = KivoColors.kivoTeal.withAlpha(56)
       ..strokeWidth = 2

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 enum KivoIconTone { regular, bold, fill, duotone }
@@ -72,6 +72,10 @@ abstract final class KivoIconRegistry {
     'train_station': PhosphorIcons.train,
     'restaurant': PhosphorIcons.forkKnife,
     'ordering_food': PhosphorIcons.forkKnife,
+    'coffee_shop': PhosphorIcons.coffee,
+    'directions': PhosphorIcons.signpost,
+    'taxi': PhosphorIcons.car,
+    'street_food': PhosphorIcons.forkKnife,
     'shopping': PhosphorIcons.shoppingBag,
     'secret_path': PhosphorIcons.path,
     'secret_passage': PhosphorIcons.path,
@@ -109,6 +113,36 @@ abstract final class KivoIconRegistry {
     'delay': PhosphorIcons.clock,
     'show': PhosphorIcons.eye,
     'queue': PhosphorIcons.queue,
+    'spill': PhosphorIcons.drop,
+    'barista': PhosphorIcons.coffee,
+    'takeaway': PhosphorIcons.shoppingBagOpen,
+    'decaf': PhosphorIcons.coffee,
+    'receipt': PhosphorIcons.receipt,
+    'drizzle': PhosphorIcons.dropHalf,
+    'battery_dead': PhosphorIcons.batteryWarning,
+    'landmark': PhosphorIcons.mapPin,
+    'intersection': PhosphorIcons.trafficSign,
+    'shortcut': PhosphorIcons.path,
+    'lost': PhosphorIcons.mapTrifold,
+    'directions': PhosphorIcons.signpost,
+    'price_surge': PhosphorIcons.trendUp,
+    'shelter': PhosphorIcons.houseLine,
+    'cancel': PhosphorIcons.xCircle,
+    'drenched': PhosphorIcons.cloudRain,
+    'pickup_point': PhosphorIcons.mapPinLine,
+    'stuck': PhosphorIcons.trafficCone,
+    'vendor': PhosphorIcons.storefront,
+    'food_stall': PhosphorIcons.storefront,
+    'spicy': PhosphorIcons.pepper,
+    'cash': PhosphorIcons.money,
+    'hygiene': PhosphorIcons.handSoap,
+    'specialty_food': PhosphorIcons.star,
+    'booking': PhosphorIcons.calendarCheck,
+    'overbooked': PhosphorIcons.warningCircle,
+    'room_upgrade': PhosphorIcons.arrowCircleUp,
+    'late_checkin': PhosphorIcons.clockCountdown,
+    'deposit': PhosphorIcons.wallet,
+    'available_rooms': PhosphorIcons.doorOpen,
     'default': PhosphorIcons.bookOpenText,
   };
 
@@ -132,6 +166,7 @@ abstract final class KivoIconRegistry {
     'profile': PhosphorIcons.userCircle,
     'translation': PhosphorIcons.translate,
     'dialogue': PhosphorIcons.chatsCircle,
+    'pointing_hand': PhosphorIcons.handPointing,
     'default': PhosphorIcons.sparkle,
   };
 

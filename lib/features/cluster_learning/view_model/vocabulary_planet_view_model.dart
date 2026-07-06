@@ -1,5 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../../app/routes/app_routes.dart';
+import '../../../data/kivo_seed_data.dart';
 import 'vocabulary_planet_view_state.dart';
 
 class VocabularyPlanetViewModel extends GetxController {
@@ -20,9 +23,10 @@ class VocabularyPlanetViewModel extends GetxController {
     try {
       final args = Get.arguments;
       final clusterId = args is Map ? args['clusterId'] as String? : null;
-      state.value = _sampleStateFor(clusterId);
+      state.value = _stateFromSeed(clusterId);
     } catch (_) {
-      errorMessage.value = 'Không thể mở hành tinh từ vựng. Hãy thử lại nhé.';
+      errorMessage.value =
+          'Kh\u00f4ng th\u1ec3 m\u1edf h\u00e0nh tinh t\u1eeb v\u1ef1ng. H\u00e3y th\u1eed l\u1ea1i nh\u00e9.';
     } finally {
       isLoading.value = false;
     }
@@ -36,28 +40,139 @@ class VocabularyPlanetViewModel extends GetxController {
   }
 
   void selectNode(VocabularyPlanetNodeData node) {
-    if (node.status == VocabularyNodeStatus.locked) {
-      Get.snackbar(
-        'Chưa mở khóa',
-        'Hoàn thành các từ trước để mở ${node.label.replaceAll('\n', ' ')} nhé.',
-        snackPosition: SnackPosition.BOTTOM,
-        duration: const Duration(milliseconds: 1400),
-      );
-      return;
-    }
-
-    Get.snackbar(
-      'Sẵn sàng khám phá',
-      '${node.label.replaceAll('\n', ' ')} sẽ mở Discover Matrix ở bước tiếp theo.',
-      snackPosition: SnackPosition.BOTTOM,
-      duration: const Duration(milliseconds: 1400),
+    Get.toNamed(
+      AppRoutes.discoveryMatrix,
+      arguments: {'clusterId': state.value?.clusterId, 'vocabularyId': node.id},
     );
   }
 
-  VocabularyPlanetState _sampleStateFor(String? clusterId) {
-    return switch (clusterId) {
-      'cluster_airport_checkin' || null => VocabularyPlanetState.airportCheckIn,
-      _ => VocabularyPlanetState.airportCheckIn,
+  VocabularyPlanetState _stateFromSeed(String? clusterId) {
+    final cluster = _findCluster(clusterId);
+    final resolvedClusterId = _stringValue(cluster, 'id');
+    final vocabularies = seedVocabularies
+        .where(
+          (vocabulary) =>
+              _stringValue(vocabulary, 'clusterId') == resolvedClusterId &&
+              vocabulary['isPlanet'] != false,
+        )
+        .toList(growable: false);
+    final learnedCount = vocabularies.length <= 1
+        ? 0
+        : vocabularies.length.clamp(0, 2);
+
+    return VocabularyPlanetState(
+      clusterId: resolvedClusterId,
+      title: _stringValue(
+        cluster,
+        'titleVi',
+        fallback: _stringValue(cluster, 'title'),
+      ),
+      subtitle: '(${_stringValue(cluster, 'title')})',
+      topicIconKey: _stringValue(cluster, 'iconKey', fallback: 'default'),
+      learnedCount: learnedCount,
+      totalCount: vocabularies.length,
+      nodes: [
+        for (var i = 0; i < vocabularies.length; i++)
+          VocabularyPlanetNodeData(
+            id: _stringValue(vocabularies[i], 'id'),
+            label: _nodeLabel(_stringValue(vocabularies[i], 'word')),
+            iconKey: _stringValue(
+              vocabularies[i],
+              'iconKey',
+              fallback: 'default',
+            ),
+            status: _statusForIndex(i),
+            accent: _accentForIndex(i),
+            alignment: _alignmentForIndex(i),
+            size: _sizeForIndex(i),
+          ),
+      ],
+    );
+  }
+
+  Map<dynamic, dynamic> _findCluster(String? clusterId) {
+    if (clusterId != null) {
+      for (final cluster in seedClusters) {
+        if (_stringValue(cluster, 'id') == clusterId) {
+          return cluster;
+        }
+      }
+    }
+    return seedClusters.first;
+  }
+
+  VocabularyNodeStatus _statusForIndex(int index) {
+    return switch (index) {
+      0 || 1 => VocabularyNodeStatus.learned,
+      2 => VocabularyNodeStatus.active,
+      _ => VocabularyNodeStatus.available,
     };
+  }
+
+  VocabularyNodeAccent _accentForIndex(int index) {
+    return switch (index % 4) {
+      0 => VocabularyNodeAccent.teal,
+      1 => VocabularyNodeAccent.mint,
+      2 => VocabularyNodeAccent.orange,
+      _ => VocabularyNodeAccent.pink,
+    };
+  }
+
+  Alignment _alignmentForIndex(int index) {
+    const positions = <Alignment>[
+      Alignment(0.0, -0.72),
+      Alignment(0.68, -0.22),
+      Alignment(0.0, 0.22),
+      Alignment(-0.68, -0.22),
+      Alignment(-0.42, 0.58),
+      Alignment(0.52, 0.62),
+    ];
+    return positions[index % positions.length];
+  }
+
+  double _sizeForIndex(int index) {
+    return switch (index % 3) {
+      0 => 132,
+      1 => 128,
+      _ => 122,
+    };
+  }
+
+  String _nodeLabel(String word) {
+    final title = _titleCase(word);
+    final parts = title.split(' ');
+    if (parts.length <= 1) {
+      return title;
+    }
+    final midpoint = (parts.length / 2).ceil();
+    return '${parts.take(midpoint).join(' ')}\n${parts.skip(midpoint).join(' ')}';
+  }
+
+  String _stringValue(
+    Map<dynamic, dynamic> source,
+    String key, {
+    String fallback = '',
+  }) {
+    final value = source[key];
+    if (value == null) {
+      return fallback;
+    }
+    final text = value.toString();
+    return text.isEmpty ? fallback : text;
+  }
+
+  String _titleCase(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return 'Word';
+    }
+    return normalized
+        .split(RegExp(r'[_\s-]+'))
+        .map(
+          (part) => part.isEmpty
+              ? part
+              : '${part[0].toUpperCase()}${part.substring(1)}',
+        )
+        .join(' ');
   }
 }

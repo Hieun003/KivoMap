@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../../app/theme/kivo_theme_tokens.dart';
 
-enum VocabularyNodeStatus { learned, active, locked }
+enum VocabularyNodeStatus { learned, active, available }
 
 enum VocabularyNodeAccent { teal, orange, pink, mint, neutral }
 
@@ -26,62 +26,6 @@ class VocabularyPlanetState {
   final List<VocabularyPlanetNodeData> nodes;
 
   double get progressRatio => totalCount == 0 ? 0 : learnedCount / totalCount;
-
-  static const VocabularyPlanetState airportCheckIn = VocabularyPlanetState(
-    clusterId: 'cluster_airport_checkin',
-    title: 'Thủ tục Sân Bay',
-    subtitle: '(Airport Check-in)',
-    topicIconKey: 'airport_check_in',
-    learnedCount: 2,
-    totalCount: 5,
-    nodes: [
-      VocabularyPlanetNodeData(
-        id: 'vocab_passport',
-        label: 'Passport',
-        iconKey: 'passport',
-        status: VocabularyNodeStatus.learned,
-        accent: VocabularyNodeAccent.teal,
-        alignment: Alignment(0.0, -0.72),
-        size: 132,
-      ),
-      VocabularyPlanetNodeData(
-        id: 'vocab_luggage',
-        label: 'Luggage',
-        iconKey: 'luggage',
-        status: VocabularyNodeStatus.learned,
-        accent: VocabularyNodeAccent.teal,
-        alignment: Alignment(0.68, -0.22),
-        size: 132,
-      ),
-      VocabularyPlanetNodeData(
-        id: 'vocab_security',
-        label: 'Security',
-        iconKey: 'security_check',
-        status: VocabularyNodeStatus.active,
-        accent: VocabularyNodeAccent.orange,
-        alignment: Alignment(0.0, 0.22),
-        size: 128,
-      ),
-      VocabularyPlanetNodeData(
-        id: 'vocab_boarding_pass',
-        label: 'Boarding\nPass',
-        iconKey: 'boarding_pass',
-        status: VocabularyNodeStatus.locked,
-        accent: VocabularyNodeAccent.neutral,
-        alignment: Alignment(-0.68, -0.22),
-        size: 128,
-      ),
-      VocabularyPlanetNodeData(
-        id: 'vocab_counter',
-        label: 'Counter',
-        iconKey: 'counter',
-        status: VocabularyNodeStatus.locked,
-        accent: VocabularyNodeAccent.neutral,
-        alignment: Alignment(-0.42, 0.58),
-        size: 122,
-      ),
-    ],
-  );
 }
 
 class VocabularyPlanetNodeData {
@@ -120,16 +64,6 @@ class VocabularyNodePalette {
   final Color rim;
 
   static VocabularyNodePalette fromNode(VocabularyPlanetNodeData node) {
-    if (node.status == VocabularyNodeStatus.locked) {
-      return const VocabularyNodePalette(
-        text: KivoColors.secondaryText,
-        surface: Color(0xFFF9F8F5),
-        border: Color(0xFFE2DED6),
-        shadow: Color(0x4A7F7A72),
-        rim: Color(0xFFC9C2B8),
-      );
-    }
-
     return switch (node.accent) {
       VocabularyNodeAccent.orange => const VocabularyNodePalette(
         text: Color(0xFF994A09),

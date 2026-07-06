@@ -57,4 +57,15 @@ docs/
 kivo_seed_data.json
 
 # Scripts
+# Local script secrets
+scripts/kivo_seed_image_generator/.env
+scripts/kivo_seed_image_generator/.kivo-generated-images/
+
+# Local scripts
 scripts/
+
+# Security and generated seed data
+lib/data/kivo_seed_data.dart
+.env
+.env.*
+!.env.example
