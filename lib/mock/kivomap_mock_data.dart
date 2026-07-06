@@ -28,7 +28,7 @@ final List<Map<String, dynamic>> seedVocabularies = [
     'meaning': 'an ninh',
     'pronunciation': '/sɪˈkjʊrəti/',
     'example': 'Go through security checkpoint.',
-  }
+  },
 ];
 
 // 3. Ma trận câu hỏi bối cảnh đan chéo đục lỗ (KnowledgeLinks)
@@ -36,15 +36,21 @@ final List<Map<String, dynamic>> seedLinks = [
   {
     'clusterId': '',
     'sourceVocabularyId': 'vocab_passport_001', // passport
-    'targetVocabularyId': 'vocab_luggage_002',  // luggage
+    'targetVocabularyId': 'vocab_luggage_002', // luggage
     'relationType': 'CONTEXT',
-    'contextExample': 'We cannot check in your luggage until we verify your [ ? ].',
+    'contextExample':
+        'We cannot check in your luggage until we verify your [ ? ].',
+    'contextExampleVi':
+        'Chúng tôi không thể làm thủ tục hành lý cho bạn cho đến khi xác minh [ ? ] của bạn.',
   },
   {
     'clusterId': '',
     'sourceVocabularyId': 'vocab_passport_001', // passport
     'targetVocabularyId': 'vocab_security_003', // security
     'relationType': 'CONTEXT',
-    'contextExample': 'Please show your ID and [ ? ] at the security checkpoint.',
-  }
+    'contextExample':
+        'Please show your ID and [ ? ] at the security checkpoint.',
+    'contextExampleVi':
+        'Vui lòng xuất trình giấy tờ tùy thân và [ ? ] tại điểm kiểm tra an ninh.',
+  },
 ];
