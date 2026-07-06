@@ -63,3 +63,9 @@ scripts/kivo_seed_image_generator/.kivo-generated-images/
 
 # Local scripts
 scripts/
+
+# Security and generated seed data
+lib/data/kivo_seed_data.dart
+.env
+.env.*
+!.env.example
