@@ -29,42 +29,40 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('home-category-airport')),
-      220,
-      scrollable: find.byType(Scrollable),
-    );
-    await tester.tap(find.byKey(const ValueKey('home-category-airport')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const ValueKey('home-topic-airport_check_in')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('home-topic-ordering_food')),
-      findsNothing,
-    );
-  });
-
-  testWidgets('opens vocabulary planet from airport topic', (tester) async {
-    await tester.pumpWidget(const MyApp());
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('home-topic-airport_check_in')),
+      find.byKey(const ValueKey('home-category-restaurant')),
       220,
       scrollable: find.byWidgetPredicate(
         (widget) =>
             widget is Scrollable && widget.axisDirection == AxisDirection.down,
       ),
     );
-    await tester.tap(find.byKey(const ValueKey('home-topic-airport_check_in')));
+    await tester.tap(find.byKey(const ValueKey('home-category-restaurant')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Thủ tục Sân Bay'), findsOneWidget);
-    expect(find.text('2 / 5'), findsOneWidget);
     expect(
-      find.byKey(const ValueKey('vocabulary-node-vocab_passport')),
+      find.byKey(const ValueKey('home-topic-coffee_shop')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('home-topic-hotel')), findsNothing);
+  });
+
+  testWidgets('opens vocabulary planet from seed topic', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('home-topic-coffee_shop')),
+      220,
+      scrollable: find.byWidgetPredicate(
+        (widget) =>
+            widget is Scrollable && widget.axisDirection == AxisDirection.down,
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('home-topic-coffee_shop')));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 6'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('vocabulary-node-vocab_spill')),
       findsOneWidget,
     );
   });

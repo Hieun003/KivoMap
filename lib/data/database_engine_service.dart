@@ -148,8 +148,10 @@ class DatabaseEngineService {
       ...schemaDoc,
       'category': null,
       'title': null,
+      'titleVi': null,
       'iconKey': null,
       'description': null,
+      'descriptionVi': null,
       'orderIndex': 0,
     }, SetOptions(merge: true));
 
@@ -162,6 +164,7 @@ class DatabaseEngineService {
         'meaning': null,
         'pronunciation': null,
         'example': null,
+        'exampleVi': null,
         'displayLabel': null,
         'iconKey': null,
         'imageUrl': null,
@@ -178,7 +181,9 @@ class DatabaseEngineService {
       'clusterId': null,
       'vocabularyId': null,
       'anchorWord': null,
+      'anchorWordVi': null,
       'contextExample': null,
+      'contextExampleVi': null,
       'maskedText': null,
       'answerLabel': null,
       'contextualIconKey': null,
@@ -191,7 +196,9 @@ class DatabaseEngineService {
       ...schemaDoc,
       'knowledgeLinkId': null,
       'miniDialogue': const <Map<String, String>>[],
+      'miniDialogueVi': const <Map<String, String>>[],
       'realWorldTip': null,
+      'realWorldTipVi': null,
       'audioUrl': null,
     }, SetOptions(merge: true));
     batch.set(
