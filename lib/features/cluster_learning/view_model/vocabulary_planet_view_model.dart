@@ -3,15 +3,17 @@ import 'package:get/get.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../data/kivo_seed_data.dart';
+import '../../../data/vocabulary_learning_service.dart';
 import 'vocabulary_planet_view_state.dart';
 
 const int _requiredContextsForSrs = 3;
 
-const Map<String, Map<String, Object>> _mockRepetitionStates = {};
-
-const Map<String, int> _mockDiscoveredContextCounts = {};
-
 class VocabularyPlanetViewModel extends GetxController {
+  VocabularyPlanetViewModel({VocabularyLearningService? learningService})
+    : _learningService =
+          learningService ?? Get.find<VocabularyLearningService>();
+
+  final VocabularyLearningService _learningService;
   final RxBool isLoading = true.obs;
   final RxnString errorMessage = RxnString();
   final Rxn<VocabularyPlanetState> state = Rxn<VocabularyPlanetState>();
@@ -27,6 +29,7 @@ class VocabularyPlanetViewModel extends GetxController {
     errorMessage.value = null;
 
     try {
+      await _learningService.initialize();
       final args = Get.arguments;
       final clusterId = args is Map ? args['clusterId'] as String? : null;
       state.value = _stateFromSeed(clusterId);
@@ -45,11 +48,12 @@ class VocabularyPlanetViewModel extends GetxController {
     Get.back<void>();
   }
 
-  void selectNode(VocabularyPlanetNodeData node) {
-    Get.toNamed(
+  Future<void> selectNode(VocabularyPlanetNodeData node) async {
+    await Get.toNamed<void>(
       AppRoutes.discoveryMatrix,
       arguments: {'clusterId': state.value?.clusterId, 'vocabularyId': node.id},
     );
+    await refresh();
   }
 
   VocabularyPlanetState _stateFromSeed(String? clusterId) {
@@ -62,9 +66,15 @@ class VocabularyPlanetViewModel extends GetxController {
               vocabulary['isPlanet'] != false,
         )
         .toList(growable: false);
+    final vocabularyIds = vocabularies.map((vocabulary) {
+      return _stringValue(vocabulary, 'id');
+    });
+    final repetitionStates = _learningService.repetitionStatesFor(
+      vocabularyIds,
+    );
     final nodes = [
       for (var i = 0; i < vocabularies.length; i++)
-        _nodeFromVocabulary(vocabularies[i], i),
+        _nodeFromVocabulary(vocabularies[i], i, repetitionStates),
     ];
     final learnedCount = nodes.where((node) => node.isInSrs).length;
 
@@ -86,6 +96,7 @@ class VocabularyPlanetViewModel extends GetxController {
   VocabularyPlanetNodeData _nodeFromVocabulary(
     Map<String, Object?> vocabulary,
     int index,
+    Map<String, RepetitionLearningState> repetitionStates,
   ) {
     final vocabularyId = _stringValue(vocabulary, 'id');
 
@@ -93,7 +104,7 @@ class VocabularyPlanetViewModel extends GetxController {
       id: vocabularyId,
       label: _nodeLabel(_stringValue(vocabulary, 'word')),
       iconKey: _stringValue(vocabulary, 'iconKey', fallback: 'default'),
-      status: _statusForVocabulary(vocabularyId),
+      status: _statusForVocabulary(vocabularyId, repetitionStates),
       accent: _accentForIndex(index),
       alignment: _alignmentForIndex(index),
       size: _sizeForIndex(index),
@@ -111,23 +122,24 @@ class VocabularyPlanetViewModel extends GetxController {
     return seedClusters.first;
   }
 
-  VocabularyNodeStatus _statusForVocabulary(String vocabularyId) {
-    final repetitionState = _mockRepetitionStates[vocabularyId];
+  VocabularyNodeStatus _statusForVocabulary(
+    String vocabularyId,
+    Map<String, RepetitionLearningState> repetitionStates,
+  ) {
+    final repetitionState = repetitionStates[vocabularyId];
     if (repetitionState != null) {
-      final masteryLevel =
-          (repetitionState['masteryLevel'] as num?)?.toInt() ?? 1;
-      final isDue = repetitionState['isDue'] == true;
-
-      if (masteryLevel >= 10) {
+      if (repetitionState.masteryLevel >= 10) {
         return VocabularyNodeStatus.mastered;
       }
-      if (isDue) {
+      if (repetitionState.isDue) {
         return VocabularyNodeStatus.reviewDue;
       }
       return VocabularyNodeStatus.srsActive;
     }
 
-    final discoveredCount = _mockDiscoveredContextCounts[vocabularyId] ?? 0;
+    final discoveredCount = _learningService.discoveredContextCountFor(
+      vocabularyId,
+    );
     if (discoveredCount > 0 && discoveredCount < _requiredContextsForSrs) {
       return VocabularyNodeStatus.inProgress;
     }

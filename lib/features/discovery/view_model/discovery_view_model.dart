@@ -6,9 +6,15 @@ import 'package:get/get.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
 import '../../../data/kivo_seed_data.dart';
+import '../../../data/vocabulary_learning_service.dart';
 import 'discovery_view_state.dart';
 
 class DiscoveryViewModel extends GetxController {
+  DiscoveryViewModel({VocabularyLearningService? learningService})
+    : _learningService =
+          learningService ?? Get.find<VocabularyLearningService>();
+
+  final VocabularyLearningService _learningService;
   final RxBool isLoading = true.obs;
   final RxnString errorMessage = RxnString();
   final Rxn<DiscoveryMatrixState> state = Rxn<DiscoveryMatrixState>();
@@ -29,12 +35,19 @@ class DiscoveryViewModel extends GetxController {
       final args = Get.arguments;
       final vocabularyId = args is Map ? args['vocabularyId'] as String? : null;
       final clusterId = args is Map ? args['clusterId'] as String? : null;
-      state.value = _stateFromSeed(
+      final nextState = _stateFromSeed(
         vocabularyId: vocabularyId,
         clusterId: clusterId,
       );
+      final restoredContextIds = await _learningService.discoveredContextIdsFor(
+        nextState.vocabularyId,
+      );
+
+      state.value = nextState;
       selectedContextId.value = null;
-      discoveredContextIds.clear();
+      discoveredContextIds
+        ..clear()
+        ..addAll(restoredContextIds);
     } catch (_) {
       errorMessage.value =
           'Kh\u00f4ng th\u1ec3 m\u1edf Ma tr\u1eadn Kh\u00e1m ph\u00e1. H\u00e3y th\u1eed l\u1ea1i nh\u00e9.';
@@ -59,10 +72,7 @@ class DiscoveryViewModel extends GetxController {
 
     final nextVocabularyId = currentState.nextVocabularyId;
     if (nextVocabularyId == null) {
-      Get.offNamed(
-        AppRoutes.vocabularyPlanet,
-        arguments: {'clusterId': currentState.clusterId},
-      );
+      Get.back<void>();
       return;
     }
 
@@ -75,11 +85,36 @@ class DiscoveryViewModel extends GetxController {
     );
   }
 
-  bool selectContext(DiscoveryContextNode context) {
+  void previewContext(DiscoveryContextNode context) {
+    selectedContextId.value = context.id;
+  }
+
+  Future<void> selectContext(DiscoveryContextNode context) async {
+    final currentState = state.value;
+    if (currentState == null) {
+      return;
+    }
+
+    await _learningService.recordDiscoveryContext(
+      vocabularyId: currentState.vocabularyId,
+      knowledgeLinkId: context.id,
+    );
     discoveredContextIds.add(context.id);
     discoveredContextIds.refresh();
     selectedContextId.value = context.id;
-    return true;
+
+    if (_isCurrentVocabularyComplete(currentState)) {
+      await _learningService.completeVocabularyLearning(
+        vocabularyId: currentState.vocabularyId,
+      );
+    }
+  }
+
+  bool _isCurrentVocabularyComplete(DiscoveryMatrixState currentState) {
+    return currentState.contexts.isNotEmpty &&
+        currentState.contexts.every((context) {
+          return discoveredContextIds.contains(context.id);
+        });
   }
 
   DiscoveryMatrixState _stateFromSeed({
