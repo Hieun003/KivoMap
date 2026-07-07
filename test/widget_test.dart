@@ -60,7 +60,7 @@ void main() {
     );
     await tester.tap(find.byKey(const ValueKey('home-topic-coffee_shop')));
     await tester.pumpAndSettle();
-    expect(find.text('2 / 6'), findsOneWidget);
+    expect(find.text('0 / 6'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('vocabulary-node-vocab_spill')),
       findsOneWidget,
