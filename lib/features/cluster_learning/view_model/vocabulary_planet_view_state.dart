@@ -2,7 +2,13 @@ import 'package:flutter/widgets.dart';
 
 import '../../../app/theme/kivo_theme_tokens.dart';
 
-enum VocabularyNodeStatus { learned, active, available }
+enum VocabularyNodeStatus {
+  notStarted,
+  inProgress,
+  srsActive,
+  reviewDue,
+  mastered,
+}
 
 enum VocabularyNodeAccent { teal, orange, pink, mint, neutral }
 
@@ -64,7 +70,7 @@ class VocabularyNodePalette {
   final Color rim;
 
   static VocabularyNodePalette fromNode(VocabularyPlanetNodeData node) {
-    return switch (node.accent) {
+    final accentPalette = switch (node.accent) {
       VocabularyNodeAccent.orange => const VocabularyNodePalette(
         text: Color(0xFF994A09),
         surface: KivoColors.softOrangeCard,
@@ -94,6 +100,28 @@ class VocabularyNodePalette {
         shadow: Color(0x4A7F7A72),
         rim: Color(0xFFC9C2B8),
       ),
+    };
+
+    return accentPalette.forStatus(node.status);
+  }
+
+  VocabularyNodePalette forStatus(VocabularyNodeStatus status) {
+    return switch (status) {
+      VocabularyNodeStatus.notStarted => const VocabularyNodePalette(
+        text: KivoColors.secondaryText,
+        surface: Color(0xFFF1F3F2),
+        border: Color(0xFFD9DEDC),
+        shadow: Color(0x287F7A72),
+        rim: Color(0xFFC8D0CD),
+      ),
+      VocabularyNodeStatus.inProgress => const VocabularyNodePalette(
+        text: Color(0xFF7A6818),
+        surface: Color(0xFFFFF7D8),
+        border: Color(0xFFEED16A),
+        shadow: Color(0x36C9A437),
+        rim: KivoColors.warningGold,
+      ),
+      _ => this,
     };
   }
 }

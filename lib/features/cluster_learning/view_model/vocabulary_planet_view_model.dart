@@ -5,6 +5,12 @@ import '../../../app/routes/app_routes.dart';
 import '../../../data/kivo_seed_data.dart';
 import 'vocabulary_planet_view_state.dart';
 
+const int _requiredContextsForSrs = 3;
+
+const Map<String, Map<String, Object>> _mockRepetitionStates = {};
+
+const Map<String, int> _mockDiscoveredContextCounts = {};
+
 class VocabularyPlanetViewModel extends GetxController {
   final RxBool isLoading = true.obs;
   final RxnString errorMessage = RxnString();
@@ -56,9 +62,11 @@ class VocabularyPlanetViewModel extends GetxController {
               vocabulary['isPlanet'] != false,
         )
         .toList(growable: false);
-    final learnedCount = vocabularies.length <= 1
-        ? 0
-        : vocabularies.length.clamp(0, 2);
+    final nodes = [
+      for (var i = 0; i < vocabularies.length; i++)
+        _nodeFromVocabulary(vocabularies[i], i),
+    ];
+    final learnedCount = nodes.where((node) => node.isInSrs).length;
 
     return VocabularyPlanetState(
       clusterId: resolvedClusterId,
@@ -71,22 +79,24 @@ class VocabularyPlanetViewModel extends GetxController {
       topicIconKey: _stringValue(cluster, 'iconKey', fallback: 'default'),
       learnedCount: learnedCount,
       totalCount: vocabularies.length,
-      nodes: [
-        for (var i = 0; i < vocabularies.length; i++)
-          VocabularyPlanetNodeData(
-            id: _stringValue(vocabularies[i], 'id'),
-            label: _nodeLabel(_stringValue(vocabularies[i], 'word')),
-            iconKey: _stringValue(
-              vocabularies[i],
-              'iconKey',
-              fallback: 'default',
-            ),
-            status: _statusForIndex(i),
-            accent: _accentForIndex(i),
-            alignment: _alignmentForIndex(i),
-            size: _sizeForIndex(i),
-          ),
-      ],
+      nodes: nodes,
+    );
+  }
+
+  VocabularyPlanetNodeData _nodeFromVocabulary(
+    Map<String, Object?> vocabulary,
+    int index,
+  ) {
+    final vocabularyId = _stringValue(vocabulary, 'id');
+
+    return VocabularyPlanetNodeData(
+      id: vocabularyId,
+      label: _nodeLabel(_stringValue(vocabulary, 'word')),
+      iconKey: _stringValue(vocabulary, 'iconKey', fallback: 'default'),
+      status: _statusForVocabulary(vocabularyId),
+      accent: _accentForIndex(index),
+      alignment: _alignmentForIndex(index),
+      size: _sizeForIndex(index),
     );
   }
 
@@ -101,12 +111,28 @@ class VocabularyPlanetViewModel extends GetxController {
     return seedClusters.first;
   }
 
-  VocabularyNodeStatus _statusForIndex(int index) {
-    return switch (index) {
-      0 || 1 => VocabularyNodeStatus.learned,
-      2 => VocabularyNodeStatus.active,
-      _ => VocabularyNodeStatus.available,
-    };
+  VocabularyNodeStatus _statusForVocabulary(String vocabularyId) {
+    final repetitionState = _mockRepetitionStates[vocabularyId];
+    if (repetitionState != null) {
+      final masteryLevel =
+          (repetitionState['masteryLevel'] as num?)?.toInt() ?? 1;
+      final isDue = repetitionState['isDue'] == true;
+
+      if (masteryLevel >= 10) {
+        return VocabularyNodeStatus.mastered;
+      }
+      if (isDue) {
+        return VocabularyNodeStatus.reviewDue;
+      }
+      return VocabularyNodeStatus.srsActive;
+    }
+
+    final discoveredCount = _mockDiscoveredContextCounts[vocabularyId] ?? 0;
+    if (discoveredCount > 0 && discoveredCount < _requiredContextsForSrs) {
+      return VocabularyNodeStatus.inProgress;
+    }
+
+    return VocabularyNodeStatus.notStarted;
   }
 
   VocabularyNodeAccent _accentForIndex(int index) {
@@ -174,5 +200,16 @@ class VocabularyPlanetViewModel extends GetxController {
               : '${part[0].toUpperCase()}${part.substring(1)}',
         )
         .join(' ');
+  }
+}
+
+extension on VocabularyPlanetNodeData {
+  bool get isInSrs {
+    return switch (status) {
+      VocabularyNodeStatus.srsActive ||
+      VocabularyNodeStatus.reviewDue ||
+      VocabularyNodeStatus.mastered => true,
+      _ => false,
+    };
   }
 }
