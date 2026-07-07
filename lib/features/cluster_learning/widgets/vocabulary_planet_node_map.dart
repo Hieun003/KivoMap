@@ -10,10 +10,12 @@ class VocabularyPlanetNodeMap extends StatelessWidget {
   const VocabularyPlanetNodeMap({
     super.key,
     required this.nodes,
+    required this.progressRatio,
     required this.onNodeSelected,
   });
 
   final List<VocabularyPlanetNodeData> nodes;
+  final double progressRatio;
   final ValueChanged<VocabularyPlanetNodeData> onNodeSelected;
 
   @override
@@ -46,7 +48,10 @@ class VocabularyPlanetNodeMap extends StatelessWidget {
               Positioned(
                 left: starCenter.dx - starSize / 2,
                 top: starCenter.dy - starSize / 2,
-                child: _ProgressStar(size: starSize),
+                child: _ProgressStar(
+                  size: starSize,
+                  progressRatio: progressRatio,
+                ),
               ),
               for (var index = 0; index < nodes.length; index += 1)
                 _PositionedPlanetNode(
@@ -118,7 +123,7 @@ class _PositionedPlanetNode extends StatelessWidget {
     );
     final top = (center.dy - size / 2).clamp(
       breathingRoom,
-      mapHeight - size - breathingRoom,
+      mapHeight - size - breathingRoom - 44.0, // reserve for label below circle
     );
 
     return Positioned(
@@ -172,69 +177,165 @@ class _VocabularyPlanetNode extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = VocabularyNodePalette.fromNode(node);
     final label = node.label.replaceAll('\n', ' ');
+    final statusLabel = _statusLabel(node.status);
+    final isQuiet = node.status == VocabularyNodeStatus.notStarted;
 
     return Semantics(
       button: true,
-      label: label,
+      label: '$label, $statusLabel',
       enabled: true,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          key: ValueKey('vocabulary-node-${node.id}'),
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: palette.rim,
-            boxShadow: [
-              BoxShadow(
-                color: palette.shadow,
-                blurRadius: size * 0.1,
-                offset: Offset(0, size * 0.07),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.only(bottom: size * 0.06),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                center: const Alignment(-0.35, -0.45),
-                radius: 0.95,
-                colors: [Colors.white.withAlpha(246), palette.surface],
-              ),
-              border: Border.all(color: palette.border, width: 1.1),
-            ),
-            alignment: Alignment.center,
-            child: SizedBox(
-              width: size * 0.74,
-              height: size * 0.45,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.center,
-                child: Text(
-                  node.label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  style: KivoTextStyles.cardTitle.copyWith(
-                    color: palette.text,
-                    fontSize: 22,
-                    height: 1.02,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(
+                    child: Container(
+                      key: ValueKey('vocabulary-node-${node.id}'),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: palette.rim,
+                        boxShadow: [
+                          BoxShadow(
+                            color: palette.shadow,
+                            blurRadius: size * (isQuiet ? 0.06 : 0.1),
+                            offset: Offset(0, size * 0.07),
+                          ),
+                        ],
+                      ),
+                      padding: EdgeInsets.only(bottom: size * 0.06),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            center: const Alignment(-0.35, -0.45),
+                            radius: 0.95,
+                            colors: [
+                              Colors.white.withAlpha(isQuiet ? 228 : 246),
+                              palette.surface,
+                            ],
+                          ),
+                          border: Border.all(
+                            color: palette.border,
+                            width: isQuiet ? 1.3 : 1.1,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Icon(
+                          KivoIconRegistry.vocabulary(
+                            node.iconKey,
+                            tone: KivoIconTone.fill,
+                          ),
+                          size: size * 0.42,
+                          color: palette.text,
+                        ),
+                      ),
+                    ),
                   ),
+                  if (node.status != VocabularyNodeStatus.notStarted)
+                    Positioned(
+                      right: -2,
+                      top: -3,
+                      child: _NodeStatusBadge(status: node.status, size: size),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: size * 1.15,
+              height: 38,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: KivoTextStyles.cardTitle.copyWith(
+                  color: palette.text,
+                  fontSize: 13,
+                  height: 1.25,
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
+    );
+  }
+
+  String _statusLabel(VocabularyNodeStatus status) {
+    return switch (status) {
+      VocabularyNodeStatus.notStarted => 'chua hoc, co the bam de kham pha',
+      VocabularyNodeStatus.inProgress => 'dang hoc',
+      VocabularyNodeStatus.srsActive => 'da vao SRS',
+      VocabularyNodeStatus.reviewDue => 'den han on tap',
+      VocabularyNodeStatus.mastered => 'da nam vung',
+    };
+  }
+}
+
+class _NodeStatusBadge extends StatelessWidget {
+  const _NodeStatusBadge({required this.status, required this.size});
+
+  final VocabularyNodeStatus status;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = switch (status) {
+      VocabularyNodeStatus.inProgress => KivoIconRegistry.reward(
+        'star',
+        tone: KivoIconTone.fill,
+      ),
+      VocabularyNodeStatus.reviewDue => KivoIconRegistry.system(
+        'review',
+        tone: KivoIconTone.fill,
+      ),
+      VocabularyNodeStatus.mastered => KivoIconRegistry.reward(
+        'trophy',
+        tone: KivoIconTone.fill,
+      ),
+      _ => KivoIconRegistry.system('check', tone: KivoIconTone.fill),
+    };
+    final color = switch (status) {
+      VocabularyNodeStatus.inProgress => KivoColors.warningGold,
+      VocabularyNodeStatus.reviewDue => KivoColors.actionOrange,
+      VocabularyNodeStatus.mastered => KivoColors.successGreen,
+      _ => KivoColors.kivoTeal,
+    };
+
+    return Container(
+      width: size * 0.27,
+      height: size * 0.27,
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(245),
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withAlpha(190), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: color.withAlpha(55),
+            blurRadius: size * 0.06,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, color: color, size: size * 0.15),
     );
   }
 }
 
 class _ProgressStar extends StatelessWidget {
-  const _ProgressStar({required this.size});
+  const _ProgressStar({required this.size, required this.progressRatio});
 
   final double size;
+  final double progressRatio;
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +361,7 @@ class _ProgressStar extends StatelessWidget {
             width: size * 0.83,
             height: size * 0.83,
             child: CircularProgressIndicator(
-              value: 0.72,
+              value: progressRatio.clamp(0.0, 1.0),
               strokeWidth: size * 0.075,
               backgroundColor: Colors.white.withAlpha(190),
               color: KivoColors.kivoTeal,
@@ -329,47 +430,6 @@ class _PlanetDecorPainter extends CustomPainter {
         canvas.drawCircle(center, size.shortestSide * 0.012, fill);
         canvas.drawCircle(center, size.shortestSide * 0.012, paint);
       }
-    }
-
-    final center = Offset(size.width * 0.50, size.height * starCenterRatioY);
-    final orbitPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = KivoColors.kivoTeal.withAlpha(34);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: center,
-        width: size.width * 0.68,
-        height: size.height * 0.58,
-      ),
-      orbitPaint,
-    );
-    orbitPaint
-      ..strokeWidth = 0.8
-      ..color = KivoColors.warningGold.withAlpha(28);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: center,
-        width: size.width * 0.48,
-        height: size.height * 0.40,
-      ),
-      orbitPaint,
-    );
-    paint
-      ..color = KivoColors.kivoTeal.withAlpha(56)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 18; i += 1) {
-      final angle = (math.pi * 2 / 18) * i;
-      final start = Offset(
-        center.dx + math.cos(angle) * size.shortestSide * 0.10,
-        center.dy + math.sin(angle) * size.shortestSide * 0.10,
-      );
-      final end = Offset(
-        center.dx + math.cos(angle) * size.shortestSide * 0.13,
-        center.dy + math.sin(angle) * size.shortestSide * 0.13,
-      );
-      canvas.drawLine(start, end, paint);
     }
   }
 

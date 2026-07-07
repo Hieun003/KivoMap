@@ -93,6 +93,7 @@ class _VocabularyPlanetContent extends StatelessWidget {
               SizedBox(height: KivoScale.h(18)),
               VocabularyPlanetNodeMap(
                 nodes: state.nodes,
+                progressRatio: state.progressRatio,
                 onNodeSelected: onNodeSelected,
               ),
             ],
@@ -116,51 +117,49 @@ class _VocabularyPlanetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: KivoScale.h(82).clamp(76, 92),
-      child: Stack(
-        alignment: Alignment.topCenter,
-        children: [
-          Positioned(left: 0, top: 0, child: _BackButton(onPressed: onBack)),
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: KivoScale.w(58)),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      style: KivoTextStyles.display.copyWith(
-                        fontSize: KivoScale.sp(34, min: 24),
-                        color: KivoColors.coffeeText,
-                        height: 1.04,
-                      ),
-                    ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _BackButton(onPressed: onBack),
+        SizedBox(height: KivoScale.h(10)),
+        SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: KivoTextStyles.display.copyWith(
+                    fontSize: KivoScale.sp(34, min: 24),
+                    color: KivoColors.coffeeText,
+                    height: 1.04,
                   ),
-                  SizedBox(height: KivoScale.h(5)),
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      style: KivoTextStyles.cardTitle.copyWith(
-                        color: KivoColors.secondaryText,
-                        fontSize: KivoScale.sp(20, min: 15),
-                        height: 1.08,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+              SizedBox(height: KivoScale.h(5)),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  subtitle,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  style: KivoTextStyles.cardTitle.copyWith(
+                    color: KivoColors.secondaryText,
+                    fontSize: KivoScale.sp(20, min: 15),
+                    height: 1.08,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
