@@ -59,12 +59,22 @@ class DiscoveryMatrixView extends GetView<DiscoveryViewModel> {
               onBack: controller.goBack,
               onContinue: controller.continueLearning,
               onContextSelected: (contextNode) {
+                final isDiscovered = controller.discoveredContextIds.contains(
+                  contextNode.id,
+                );
+                if (isDiscovered) {
+                  controller.previewContext(contextNode);
+                }
+
                 Get.bottomSheet<void>(
                   DiscoveryContextBottomSheet(
                     rootNode: matrixState.root,
                     contextNode: contextNode,
-                    onUnderstood: () {
-                      controller.selectContext(contextNode);
+                    actionLabel: isDiscovered ? '\u0110\u00f3ng' : null,
+                    onUnderstood: () async {
+                      if (!isDiscovered) {
+                        await controller.selectContext(contextNode);
+                      }
                       Get.back<void>();
                     },
                   ),

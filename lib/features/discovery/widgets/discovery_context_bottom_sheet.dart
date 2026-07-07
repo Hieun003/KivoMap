@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 import '../../../app/icons/kivo_icon_registry.dart';
 import '../../../app/responsive/kivo_scale.dart';
@@ -13,11 +13,13 @@ class DiscoveryContextBottomSheet extends StatelessWidget {
     required this.rootNode,
     required this.contextNode,
     required this.onUnderstood,
+    this.actionLabel,
   });
 
   final DiscoveryRootNode rootNode;
   final DiscoveryContextNode contextNode;
   final VoidCallback onUnderstood;
+  final String? actionLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +85,12 @@ class DiscoveryContextBottomSheet extends StatelessWidget {
                     SizedBox(height: KivoScale.h(6)),
                     PracticalTipCard(tip: contextNode.tip, keywords: keywords),
                     SizedBox(height: KivoScale.h(18)),
-                    _UnderstoodButton(onPressed: onUnderstood),
+                    _UnderstoodButton(
+                      label:
+                          actionLabel ??
+                          '\u0110\u00e3 hi\u1ec3u li\u00ean k\u1ebft n\u00e0y \u{1F44D}',
+                      onPressed: onUnderstood,
+                    ),
                   ],
                 ),
               ),
@@ -438,8 +445,9 @@ class _VietnameseContextBlock extends StatelessWidget {
 }
 
 class _UnderstoodButton extends StatelessWidget {
-  const _UnderstoodButton({required this.onPressed});
+  const _UnderstoodButton({required this.label, required this.onPressed});
 
+  final String label;
   final VoidCallback onPressed;
 
   @override
@@ -463,7 +471,7 @@ class _UnderstoodButton extends StatelessWidget {
           ],
         ),
         child: Text(
-          'Đã hiểu liên kết này \u{1F44D}',
+          label,
           textAlign: TextAlign.center,
           style: KivoTextStyles.cta.copyWith(
             fontSize: KivoScale.sp(26, min: 20),

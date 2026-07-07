@@ -3,8 +3,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kivo_map/features/home/view_model/home_view_state.dart';
 import 'package:kivo_map/features/home/widgets/home_review_banner.dart';
 import 'package:kivo_map/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('shows home dashboard', (tester) async {
     await tester.pumpWidget(const MyApp());
 
