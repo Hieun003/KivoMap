@@ -7,12 +7,9 @@ import 'vocabulary_planet_view_state.dart';
 
 const int _requiredContextsForSrs = 3;
 
-const Map<String, Map<String, Object>> _mockRepetitionStates = {
-  'vocab_spill': {'masteryLevel': 4, 'isDue': false},
-  'vocab_barista': {'masteryLevel': 2, 'isDue': true},
-};
+const Map<String, Map<String, Object>> _mockRepetitionStates = {};
 
-const Map<String, int> _mockDiscoveredContextCounts = {'vocab_takeaway': 2};
+const Map<String, int> _mockDiscoveredContextCounts = {};
 
 class VocabularyPlanetViewModel extends GetxController {
   final RxBool isLoading = true.obs;
