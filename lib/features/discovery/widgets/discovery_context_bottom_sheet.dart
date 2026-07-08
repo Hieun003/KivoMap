@@ -104,114 +104,112 @@ class _DiscoveryContextBottomSheetState extends State<DiscoveryContextBottomShee
             ),
             boxShadow: KivoShadows.raised,
           ),
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  KivoScale.w(22),
-                  KivoScale.h(22),
-                  KivoScale.w(22),
-                  KivoScale.h(26),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              KivoScale.w(22),
+              KivoScale.h(14),
+              KivoScale.w(22),
+              KivoScale.h(26),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Center(child: const _SheetHandle()),
-                    SizedBox(height: KivoScale.h(18)),
-                    _DeepContextHeader(
-                      rootNode: widget.rootNode,
-                      contextNode: widget.contextNode,
-                    ),
-                    SizedBox(height: KivoScale.h(22)),
-                    AnimatedCrossFade(
-                      firstChild: const SizedBox(width: double.infinity),
-                      secondChild: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _DeepContextLearningStack(
-                            rootNode: widget.rootNode,
-                            contextNode: widget.contextNode,
-                          ),
-                          SizedBox(height: KivoScale.h(18)),
-                        ],
-                      ),
-                      crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 300),
-                    ),
-                    if (!_isQuizActive) ...[
-                      for (var i = 0; i < widget.contextNode.dialogue.length; i += 1)
-                        DeepDialogueBubble(
-                          line: widget.contextNode.dialogue[i],
-                          alignRight: i.isOdd,
-                          keywords: keywords,
-                        ),
-                    ] else ...[
-                      DeepDialogueBubble(
-                        line: widget.contextNode.dialogue[0],
-                        alignRight: false,
-                        keywords: keywords,
-                      ),
-                      _QuizBlock(
-                        options: _shuffledOptions,
-                        selectedAnswerIndex: _selectedAnswerIndex,
-                        onSelect: (index) {
-                          setState(() {
-                            _selectedAnswerIndex = index;
-                          });
-                          TtsService.instance.speak(
-                            _shuffledOptions[index].text,
-                            pitch: 0.82,
-                          );
-                        },
-                        speaker: widget.contextNode.dialogue[1].speaker,
-                      ),
-                    ],
-                    if (widget.contextNode.dialogue.isEmpty)
-                      DeepDialogueBubble(
-                        line: DiscoveryDialogueLine(
-                          speaker: widget.contextNode.title,
-                          text: widget.contextNode.sentence,
-                          translation: widget.contextNode.sentenceVi,
-                        ),
-                        alignRight: false,
-                        keywords: keywords,
-                      ),
-                    AnimatedCrossFade(
-                      firstChild: const SizedBox(width: double.infinity),
-                      secondChild: Padding(
-                        padding: EdgeInsets.only(top: KivoScale.h(6)),
-                        child: PracticalTipCard(
-                          tip: widget.contextNode.tip,
-                          tipEn: widget.contextNode.tipEn,
-                          keywords: keywords,
-                        ),
-                      ),
-                      crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: const Duration(milliseconds: 300),
-                    ),
-                    SizedBox(height: KivoScale.h(18)),
-                    _UnderstoodButton(
-                      label: widget.actionLabel ??
-                          '\u0110\u00e3 hi\u1ec3u li\u00ean k\u1ebft n\u00e0y \u{1F44D}',
-                      onPressed: (_isQuizActive && _selectedAnswerIndex == null)
-                          ? null
-                          : widget.onUnderstood,
+                    SizedBox(width: KivoScale.w(46).clamp(40, 54)),
+                    const _SheetHandle(),
+                    _DeepContextCloseButton(
+                      onPressed: () => Navigator.of(context).pop(),
                     ),
                   ],
                 ),
-              ),
-              Positioned(
-                right: KivoScale.w(18),
-                top: KivoScale.h(44),
-                child: _DeepContextCloseButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                SizedBox(height: KivoScale.h(18)),
+                _DeepContextHeader(
+                  rootNode: widget.rootNode,
+                  contextNode: widget.contextNode,
                 ),
-              ),
-            ],
+                SizedBox(height: KivoScale.h(22)),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox(width: double.infinity),
+                  secondChild: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _DeepContextLearningStack(
+                        rootNode: widget.rootNode,
+                        contextNode: widget.contextNode,
+                      ),
+                      SizedBox(height: KivoScale.h(18)),
+                    ],
+                  ),
+                  crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 300),
+                ),
+                if (!_isQuizActive) ...[
+                  for (var i = 0; i < widget.contextNode.dialogue.length; i += 1)
+                    DeepDialogueBubble(
+                      line: widget.contextNode.dialogue[i],
+                      alignRight: i.isOdd,
+                      keywords: keywords,
+                    ),
+                ] else ...[
+                  DeepDialogueBubble(
+                    line: widget.contextNode.dialogue[0],
+                    alignRight: false,
+                    keywords: keywords,
+                  ),
+                  _QuizBlock(
+                    options: _shuffledOptions,
+                    selectedAnswerIndex: _selectedAnswerIndex,
+                    onSelect: (index) {
+                      setState(() {
+                        _selectedAnswerIndex = index;
+                      });
+                      TtsService.instance.speak(
+                        _shuffledOptions[index].text,
+                        pitch: 0.82,
+                      );
+                    },
+                    speaker: widget.contextNode.dialogue[1].speaker,
+                  ),
+                ],
+                if (widget.contextNode.dialogue.isEmpty)
+                  DeepDialogueBubble(
+                    line: DiscoveryDialogueLine(
+                      speaker: widget.contextNode.title,
+                      text: widget.contextNode.sentence,
+                      translation: widget.contextNode.sentenceVi,
+                    ),
+                    alignRight: false,
+                    keywords: keywords,
+                  ),
+                AnimatedCrossFade(
+                  firstChild: const SizedBox(width: double.infinity),
+                  secondChild: Padding(
+                    padding: EdgeInsets.only(top: KivoScale.h(6)),
+                    child: PracticalTipCard(
+                      tip: widget.contextNode.tip,
+                      tipEn: widget.contextNode.tipEn,
+                      keywords: keywords,
+                    ),
+                  ),
+                  crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
+                      ? CrossFadeState.showSecond
+                      : CrossFadeState.showFirst,
+                  duration: const Duration(milliseconds: 300),
+                ),
+                SizedBox(height: KivoScale.h(18)),
+                _UnderstoodButton(
+                  label: widget.actionLabel ??
+                      '\u0110\u00e3 hi\u1ec3u li\u00ean k\u1ebft n\u00e0y \u{1F44D}',
+                  onPressed: (_isQuizActive && _selectedAnswerIndex == null)
+                      ? null
+                      : widget.onUnderstood,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -283,46 +281,43 @@ class _DeepContextHeader extends StatelessWidget {
         ),
         SizedBox(width: KivoScale.w(16)),
         Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(right: KivoScale.w(52)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    style: KivoTextStyles.body.copyWith(
-                      color: KivoColors.coffeeText,
-                      fontSize: KivoScale.sp(14.5, min: 12),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    children: [
-                      const TextSpan(
-                        text: 'T\u1eeb kh\u00f3a c\u1ed1t l\u00f5i: ',
-                      ),
-                      TextSpan(
-                        text: rootNode.label,
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: KivoScale.h(8)),
-                Text(
-                  contextNode.translation.isEmpty
-                      ? contextNode.title
-                      : '${contextNode.title} (${contextNode.translation})',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: KivoTextStyles.display.copyWith(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                text: TextSpan(
+                  style: KivoTextStyles.body.copyWith(
                     color: KivoColors.coffeeText,
-                    fontSize: KivoScale.sp(27, min: 20),
-                    height: 1.08,
+                    fontSize: KivoScale.sp(14.5, min: 12),
+                    fontWeight: FontWeight.w700,
                   ),
+                  children: [
+                    const TextSpan(
+                      text: 'T\u1eeb kh\u00f3a c\u1ed1t l\u00f5i: ',
+                    ),
+                    TextSpan(
+                      text: rootNode.label,
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: KivoScale.h(8)),
+              Text(
+                contextNode.translation.isEmpty
+                    ? contextNode.title
+                    : '${contextNode.title} (${contextNode.translation})',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: KivoTextStyles.display.copyWith(
+                  color: KivoColors.coffeeText,
+                  fontSize: KivoScale.sp(27, min: 20),
+                  height: 1.08,
+                ),
+              ),
+            ],
           ),
         ),
       ],
