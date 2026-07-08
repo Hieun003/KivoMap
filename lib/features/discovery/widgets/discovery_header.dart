@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../app/assets/image_paths.dart';
 import '../../../app/icons/kivo_icon_registry.dart';
 import '../../../app/responsive/kivo_scale.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../../../data/energy_service.dart';
 import '../view_model/discovery_view_state.dart';
 
 class DiscoveryHeader extends StatelessWidget {
@@ -25,6 +28,7 @@ class DiscoveryHeader extends StatelessWidget {
         alignment: Alignment.topCenter,
         children: [
           Positioned(left: 0, top: 0, child: _BackButton(onPressed: onBack)),
+          Positioned(right: 0, top: 0, child: const _EnergyChip()),
           Positioned.fill(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: KivoScale.w(62)),
@@ -102,6 +106,56 @@ class _BackButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _EnergyChip extends StatelessWidget {
+  const _EnergyChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final size = KivoScale.w(54).clamp(46, 64).toDouble();
+    final energyService = Get.find<EnergyService>();
+
+    return Obx(() {
+      final energy = energyService.energy.value;
+      return Container(
+        height: size,
+        padding: EdgeInsets.symmetric(horizontal: KivoScale.w(12)),
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(235),
+          borderRadius: BorderRadius.circular(KivoScale.r(20)),
+          border: Border.all(color: KivoColors.kivoTeal.withAlpha(70)),
+          boxShadow: [
+            BoxShadow(
+              color: KivoColors.kivoTeal.withAlpha(30),
+              blurRadius: KivoScale.r(12),
+              offset: Offset(0, KivoScale.h(6)),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              KivoImagePaths.energyDiamond,
+              width: KivoScale.w(30).clamp(24.0, 36.0),
+              height: KivoScale.w(30).clamp(24.0, 36.0),
+            ),
+            SizedBox(width: KivoScale.w(4)),
+            Text(
+              '$energy',
+              style: KivoTextStyles.cardTitle.copyWith(
+                color: KivoColors.deepTeal,
+                fontSize: KivoScale.sp(19, min: 14),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
   }
 }
 

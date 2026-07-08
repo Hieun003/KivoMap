@@ -1,8 +1,9 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../app/icons/kivo_icon_registry.dart';
 import '../../../app/responsive/kivo_scale.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../../../data/tts_service.dart';
 import '../view_model/discovery_view_state.dart';
 import 'deep_dialogue_bubble.dart';
 import 'practical_tip_card.dart';
@@ -262,7 +263,10 @@ class _DeepContextLearningStack extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _EnglishContextBlock(chunks: contextNode.englishChunks),
+        _EnglishContextBlock(
+          chunks: contextNode.englishChunks,
+          sentence: contextNode.sentence,
+        ),
         SizedBox(height: KivoScale.h(12)),
         _MiniVocabCardRow(rootNode: rootNode, contextNode: contextNode),
         SizedBox(height: KivoScale.h(12)),
@@ -272,26 +276,89 @@ class _DeepContextLearningStack extends StatelessWidget {
   }
 }
 
-class _EnglishContextBlock extends StatelessWidget {
-  const _EnglishContextBlock({required this.chunks});
+class _EnglishContextBlock extends StatefulWidget {
+  const _EnglishContextBlock({
+    required this.chunks,
+    required this.sentence,
+  });
 
   final List<DiscoverySentenceChunk> chunks;
+  final String sentence;
+
+  @override
+  State<_EnglishContextBlock> createState() => _EnglishContextBlockState();
+}
+
+class _EnglishContextBlockState extends State<_EnglishContextBlock> {
+  bool _speaking = false;
+
+  Future<void> _onSpeak() async {
+    if (_speaking) {
+      await TtsService.instance.stop();
+      setState(() => _speaking = false);
+      return;
+    }
+    setState(() => _speaking = true);
+    await TtsService.instance.speak(widget.sentence);
+    if (mounted) setState(() => _speaking = false);
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(KivoScale.w(16)),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(238),
-        borderRadius: BorderRadius.circular(KivoScale.r(18)),
-        border: Border.all(color: const Color(0xFFE4D7C9)),
-        boxShadow: KivoShadows.soft,
-      ),
-      child: _ContextChunkRichText(
-        chunks: chunks,
-        fontSize: KivoScale.sp(16, min: 13),
-      ),
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.fromLTRB(
+            KivoScale.w(16),
+            KivoScale.h(16),
+            KivoScale.w(52),
+            KivoScale.h(16),
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(238),
+            borderRadius: BorderRadius.circular(KivoScale.r(18)),
+            border: Border.all(color: const Color(0xFFE4D7C9)),
+            boxShadow: KivoShadows.soft,
+          ),
+          child: _ContextChunkRichText(
+            chunks: widget.chunks,
+            fontSize: KivoScale.sp(16, min: 13),
+          ),
+        ),
+        Positioned(
+          top: KivoScale.h(8),
+          right: KivoScale.w(8),
+          child: GestureDetector(
+            onTap: _onSpeak,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: KivoScale.w(38).clamp(34, 44),
+              height: KivoScale.w(38).clamp(34, 44),
+              decoration: BoxDecoration(
+                color: _speaking
+                    ? KivoColors.targetPurple.withAlpha(30)
+                    : const Color(0xFFF3EDE6),
+                borderRadius: BorderRadius.circular(KivoScale.r(12)),
+                border: Border.all(
+                  color: _speaking
+                      ? KivoColors.targetPurple.withAlpha(120)
+                      : const Color(0xFFE4D7C9),
+                ),
+              ),
+              child: Icon(
+                _speaking
+                    ? KivoIconRegistry.system('close', tone: KivoIconTone.bold)
+                    : KivoIconRegistry.system('audio', tone: KivoIconTone.bold),
+                color: _speaking
+                    ? KivoColors.targetPurple
+                    : KivoColors.secondaryText,
+                size: KivoScale.w(20).clamp(18, 24),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
