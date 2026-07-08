@@ -13,11 +13,13 @@ class HomeReviewBanner extends StatelessWidget {
     required this.status,
     this.onStartLearning,
     this.onStartReview,
+    this.customButtonLabel,
   });
 
   final HomeReviewBannerStatus status;
   final VoidCallback? onStartLearning;
   final VoidCallback? onStartReview;
+  final String? customButtonLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +70,11 @@ class HomeReviewBanner extends StatelessWidget {
             right: KivoScale.w(24),
             top: KivoScale.w(48),
             bottom: KivoScale.w(32),
-            child: _BannerCopy(content: content, onPressed: effectiveCallback),
+            child: _BannerCopy(
+              content: content,
+              onPressed: effectiveCallback,
+              customButtonLabel: customButtonLabel,
+            ),
           ),
         ],
       ),
@@ -177,10 +183,15 @@ class _LightBurstPainter extends CustomPainter {
 }
 
 class _BannerCopy extends StatelessWidget {
-  const _BannerCopy({required this.content, required this.onPressed});
+  const _BannerCopy({
+    required this.content,
+    required this.onPressed,
+    this.customButtonLabel,
+  });
 
   final _HomeReviewBannerContent content;
   final VoidCallback? onPressed;
+  final String? customButtonLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -203,7 +214,7 @@ class _BannerCopy extends StatelessWidget {
         ],
         Text(
           content.message,
-          maxLines: 3,
+          maxLines: 4,
           overflow: TextOverflow.ellipsis,
           style: KivoTextStyles.body.copyWith(
             color: KivoColors.inkText,
@@ -214,7 +225,7 @@ class _BannerCopy extends StatelessWidget {
         ),
         SizedBox(height: KivoScale.h(24)),
         _BannerButton(
-          label: content.buttonLabel,
+          label: customButtonLabel ?? content.buttonLabel,
           enabled: content.isButtonEnabled,
           onPressed: onPressed,
         ),
