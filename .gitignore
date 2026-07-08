@@ -55,6 +55,7 @@ docs/
 
 # Seed data
 kivo_seed_data.json
+asset/seed_data/
 
 # Scripts
 # Local script secrets

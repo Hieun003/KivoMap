@@ -1,20 +1,46 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../data/kivo_seed_data.dart';
+import '../../../data/vocabulary_learning_service.dart';
+import '../../../data/energy_service.dart';
 import 'home_view_state.dart';
 
 class HomeViewModel extends GetxController {
+  HomeViewModel({
+    VocabularyLearningService? learningService,
+    EnergyService? energyService,
+  })  : _learningService = learningService ?? Get.find<VocabularyLearningService>(),
+        _energyService = energyService ?? Get.find<EnergyService>();
+
+  final VocabularyLearningService _learningService;
+  final EnergyService _energyService;
   final RxBool isLoading = true.obs;
   final RxnString errorMessage = RxnString();
   final Rxn<HomeDashboardState> state = Rxn<HomeDashboardState>();
+  final RxString bannerCountdownText = ''.obs;
 
   HomeDashboardState? _sourceState;
+  Timer? _bannerTimer;
 
   @override
   void onInit() {
     super.onInit();
+    // Re-evaluate energy/streak values dynamically when service signals change
+    ever(_energyService.energy, (_) => _updateEnergyAndStreak());
+    ever(_energyService.streakDays, (_) => _updateEnergyAndStreak());
+    ever(_learningService.srsUpdateTrigger, (_) => load());
     load();
+  }
+
+  Future<void> _resetAndLoad() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    Get.log('KIVO: Reset all SharedPreferences data successfully!');
+    await load();
   }
 
   Future<void> load() async {
@@ -22,14 +48,108 @@ class HomeViewModel extends GetxController {
     errorMessage.value = null;
 
     try {
-      _sourceState = _buildStateFromSeed();
+      await _learningService.initialize();
+      await _energyService.initialize();
+      final allVocabularyIds = seedVocabularies
+          .map((v) => _stringValue(v, 'id'))
+          .toList(growable: false);
+      final repetitionStates = _learningService.repetitionStatesFor(
+        allVocabularyIds,
+      );
+      final dueStates = await _learningService.dueRepetitionStates(limit: 1);
+      _sourceState = _buildStateFromSeed(
+        repetitionStates: repetitionStates,
+        hasDue: dueStates.isNotEmpty,
+      );
       state.value = _buildFilteredState(selectedCategoryKey: 'default');
+      _updateBannerCountdown();
     } catch (_) {
       errorMessage.value =
           'Kh\u00f4ng th\u1ec3 t\u1ea3i trang ch\u1ee7. H\u00e3y th\u1eed l\u1ea1i nh\u00e9.';
     } finally {
       isLoading.value = false;
     }
+  }
+
+  @override
+  void onClose() {
+    _bannerTimer?.cancel();
+    super.onClose();
+  }
+
+  void _updateBannerCountdown() {
+    _bannerTimer?.cancel();
+    final currentState = state.value;
+    if (currentState == null || currentState.bannerStatus != HomeReviewBannerStatus.noDueReview) {
+      bannerCountdownText.value = '';
+      return;
+    }
+
+    _runBannerCountdownTick();
+    _bannerTimer = Timer.periodic(const Duration(minutes: 1), (_) => _runBannerCountdownTick());
+  }
+
+  Future<void> _reloadSrsStateOnly() async {
+    try {
+      final allVocabularyIds = seedVocabularies
+          .map((v) => _stringValue(v, 'id'))
+          .toList(growable: false);
+      final repetitionStates = _learningService.repetitionStatesFor(
+        allVocabularyIds,
+      );
+      final dueStates = await _learningService.dueRepetitionStates(limit: 1);
+      _sourceState = _buildStateFromSeed(
+        repetitionStates: repetitionStates,
+        hasDue: dueStates.isNotEmpty,
+      );
+      state.value = _buildFilteredState(selectedCategoryKey: 'default');
+      _updateBannerCountdown();
+    } catch (_) {
+      // Âm thầm bỏ qua lỗi trong nền
+    }
+  }
+
+  Future<void> _runBannerCountdownTick() async {
+    final nextTime = await _learningService.getNextReviewTime();
+    if (nextTime == null) {
+      bannerCountdownText.value = '';
+      _bannerTimer?.cancel();
+      _reloadSrsStateOnly();
+      return;
+    }
+
+    final diff = nextTime.difference(DateTime.now());
+    if (diff.isNegative) {
+      bannerCountdownText.value = '';
+      _bannerTimer?.cancel();
+      _reloadSrsStateOnly();
+      return;
+    }
+
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes % 60;
+    if (hours > 0) {
+      bannerCountdownText.value = 'Ôn tập sau: ${hours}h ${minutes}m ⏳';
+    } else if (minutes > 0) {
+      bannerCountdownText.value = 'Ôn tập sau: ${minutes}p ⏳';
+    } else {
+      bannerCountdownText.value = 'Sắp đến hạn ôn tập... ⏳';
+    }
+  }
+
+  void _updateEnergyAndStreak() {
+    final current = state.value;
+    if (current == null) return;
+    state.value = HomeDashboardState(
+      userName: current.userName,
+      roleLabel: current.roleLabel,
+      energy: _energyService.energy.value,
+      maxEnergy: EnergyService.maxEnergy,
+      streakDays: _energyService.streakDays.value,
+      bannerStatus: current.bannerStatus,
+      categories: current.categories,
+      contextSections: current.contextSections,
+    );
   }
 
   @override
@@ -50,7 +170,7 @@ class HomeViewModel extends GetxController {
   }
 
   void startReview() {
-    // Review queue will consume seeded review state when that feature is wired.
+    Get.toNamed(AppRoutes.review);
   }
 
   void openTopic(HomeContextTopicData topic) {
@@ -65,7 +185,10 @@ class HomeViewModel extends GetxController {
     );
   }
 
-  HomeDashboardState _buildStateFromSeed() {
+  HomeDashboardState _buildStateFromSeed({
+    required Map<String, RepetitionLearningState> repetitionStates,
+    required bool hasDue,
+  }) {
     final sectionsByCategory = <String, List<HomeContextTopicData>>{};
 
     for (
@@ -76,13 +199,16 @@ class HomeViewModel extends GetxController {
       final cluster = seedClusters[clusterIndex];
       final clusterId = _stringValue(cluster, 'id');
       final category = _stringValue(cluster, 'category', fallback: 'DAILY');
-      final vocabCount = seedVocabularies
+      final clusterVocabIds = seedVocabularies
           .where(
             (vocabulary) => _stringValue(vocabulary, 'clusterId') == clusterId,
           )
+          .map((v) => _stringValue(v, 'id'))
+          .toList(growable: false);
+      final totalCount = clusterVocabIds.isEmpty ? 1 : clusterVocabIds.length;
+      final learnedCount = clusterVocabIds
+          .where((id) => repetitionStates.containsKey(id))
           .length;
-      final totalCount = vocabCount == 0 ? 1 : vocabCount;
-      final learnedCount = totalCount <= 1 ? 0 : totalCount.clamp(0, 2);
       final accent = _accentForIndex(clusterIndex);
 
       sectionsByCategory
@@ -127,13 +253,20 @@ class HomeViewModel extends GetxController {
         ),
     ];
 
+    final totalInSrs = repetitionStates.length;
+    final bannerStatus = totalInSrs == 0
+        ? HomeReviewBannerStatus.noWords
+        : hasDue
+        ? HomeReviewBannerStatus.reviewDue
+        : HomeReviewBannerStatus.noDueReview;
+
     return HomeDashboardState(
       userName: 'Explorer',
       roleLabel: 'Explorer',
-      energy: 24,
-      maxEnergy: 50,
-      streakDays: 7,
-      bannerStatus: HomeReviewBannerStatus.reviewDue,
+      energy: _energyService.energy.value,
+      maxEnergy: EnergyService.maxEnergy,
+      streakDays: _energyService.streakDays.value,
+      bannerStatus: bannerStatus,
       categories: categories,
       contextSections: sections,
     );

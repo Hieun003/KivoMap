@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../app/icons/kivo_icon_registry.dart';
 import '../../../app/responsive/kivo_scale.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../../../data/tts_service.dart';
 import '../view_model/discovery_view_state.dart';
 import 'keyword_rich_text.dart';
 
@@ -24,6 +25,21 @@ class DeepDialogueBubble extends StatefulWidget {
 
 class _DeepDialogueBubbleState extends State<DeepDialogueBubble> {
   bool _showTranslation = false;
+  bool _speaking = false;
+
+  Future<void> _onSpeak() async {
+    if (_speaking) {
+      await TtsService.instance.stop();
+      setState(() => _speaking = false);
+      return;
+    }
+    setState(() => _speaking = true);
+    // Guest (trái, người hỏi): pitch cao hơn – giọng nhẹ, thắc mắc
+    // Host (phải, người trả lời): pitch thấp hơn – giọng trầm, tự tin
+    final pitch = widget.alignRight ? 0.82 : 1.12;
+    await TtsService.instance.speak(widget.line.text, pitch: pitch);
+    if (mounted) setState(() => _speaking = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,11 +100,13 @@ class _DeepDialogueBubbleState extends State<DeepDialogueBubble> {
                       SizedBox(width: KivoScale.w(8)),
                       _SmallRoundIconButton(
                         icon: KivoIconRegistry.system(
-                          'audio',
+                          _speaking ? 'close' : 'audio',
                           tone: KivoIconTone.fill,
                         ),
-                        color: const Color(0xFF2D8CFF),
-                        onPressed: () {},
+                        color: _speaking
+                            ? KivoColors.targetPurple
+                            : const Color(0xFF2D8CFF),
+                        onPressed: _onSpeak,
                       ),
                     ],
                   ),

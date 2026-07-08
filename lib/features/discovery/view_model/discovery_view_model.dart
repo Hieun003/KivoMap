@@ -1,37 +1,164 @@
 import 'dart:convert';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../app/assets/image_paths.dart';
+import '../../../app/responsive/kivo_scale.dart';
 import '../../../app/routes/app_routes.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../../../data/energy_service.dart';
 import '../../../data/kivo_seed_data.dart';
 import '../../../data/vocabulary_learning_service.dart';
 import 'discovery_view_state.dart';
 
 class DiscoveryViewModel extends GetxController {
-  DiscoveryViewModel({VocabularyLearningService? learningService})
-    : _learningService =
-          learningService ?? Get.find<VocabularyLearningService>();
+  DiscoveryViewModel({
+    VocabularyLearningService? learningService,
+    EnergyService? energyService,
+  })  : _learningService = learningService ?? Get.find<VocabularyLearningService>(),
+        _energyService = energyService ?? Get.find<EnergyService>();
 
   final VocabularyLearningService _learningService;
+  final EnergyService _energyService;
   final RxBool isLoading = true.obs;
   final RxnString errorMessage = RxnString();
   final Rxn<DiscoveryMatrixState> state = Rxn<DiscoveryMatrixState>();
   final RxnString selectedContextId = RxnString();
   final RxSet<String> discoveredContextIds = <String>{}.obs;
+  final RxBool outOfEnergy = false.obs;
 
   @override
   void onInit() {
     super.onInit();
+    ever(outOfEnergy, (bool isOutOfEnergy) {
+      if (isOutOfEnergy) {
+        _showOutOfEnergyDialog();
+      }
+    });
     load();
+  }
+
+  void _showOutOfEnergyDialog() {
+    Get.dialog<void>(
+      Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: EdgeInsets.all(KivoScale.w(22)),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(KivoScale.r(24)),
+            border: Border.all(color: KivoColors.kivoTeal.withAlpha(120), width: 1.6),
+            boxShadow: KivoShadows.raised,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: KivoScale.w(64),
+                height: KivoScale.w(64),
+                decoration: BoxDecoration(
+                  color: KivoColors.softMintCard,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: KivoColors.kivoTeal),
+                  boxShadow: KivoShadows.soft,
+                ),
+                padding: EdgeInsets.all(KivoScale.w(12)),
+                child: Image.asset(KivoImagePaths.energyDiamond),
+              ),
+              SizedBox(height: KivoScale.h(16)),
+              Text(
+                'H\u1ebft n\u0103ng l\u01b0\u1ee3ng r\u1ed3i! \u26A1',
+                style: KivoTextStyles.display.copyWith(
+                  color: KivoColors.coffeeText,
+                  fontSize: KivoScale.sp(26, min: 20),
+                ),
+              ),
+              SizedBox(height: KivoScale.h(12)),
+              Text(
+                'N\u0103ng l\u01b0\u1ee3ng \u0111\u00e3 c\u1ea1n (h\u1ed3i 1 m\u1ed7i ph\u00fat).\nH\u00e3y \u00f4n t\u1eadp l\u1ea1i c\u00e1c t\u1eeb \u0111\u0103ng h\u1ecdc (ho\u00e0n to\u00e0n mi\u1ec5n ph\u00ed n\u0103ng l\u01b0\u1ee3ng) \u0111\u1ec3 ti\u1ebfp t\u1ee5c ti\u1ebfn \u0111\u1ed9 nh\u00e9!',
+                textAlign: TextAlign.center,
+                style: KivoTextStyles.body.copyWith(
+                  color: KivoColors.inkText,
+                  fontSize: KivoScale.sp(15, min: 12.5),
+                  height: 1.4,
+                ),
+              ),
+              SizedBox(height: KivoScale.h(24)),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: KivoScale.h(14)),
+                        side: BorderSide(color: KivoColors.disabledText.withAlpha(100)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(KivoScale.r(16)),
+                        ),
+                      ),
+                      onPressed: () {
+                        outOfEnergy.value = false;
+                        Get.back<void>();
+                      },
+                      child: Text(
+                        '\u0110\u1ee3i h\u1ed3i ph\u1ee5c',
+                        style: KivoTextStyles.cardTitle.copyWith(
+                          color: KivoColors.disabledText,
+                          fontSize: KivoScale.sp(16, min: 13),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: KivoScale.w(12)),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: KivoGradients.cyanButton,
+                        borderRadius: BorderRadius.circular(KivoScale.r(16)),
+                        boxShadow: KivoShadows.soft,
+                      ),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          shadowColor: Colors.transparent,
+                          padding: EdgeInsets.symmetric(vertical: KivoScale.h(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(KivoScale.r(16)),
+                          ),
+                        ),
+                        onPressed: () {
+                          outOfEnergy.value = false;
+                          Get.back<void>();
+                          Get.toNamed<void>(AppRoutes.review);
+                        },
+                        child: Text(
+                          '\u00d4n t\u1eadp ngay \u26A1',
+                          style: KivoTextStyles.cardTitle.copyWith(
+                            color: Colors.white,
+                            fontSize: KivoScale.sp(16, min: 13),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
   }
 
   Future<void> load() async {
     isLoading.value = true;
     errorMessage.value = null;
+    outOfEnergy.value = false;
 
     try {
+      await _learningService.initialize();
+      await _energyService.initialize();
       final args = Get.arguments;
       final vocabularyId = args is Map ? args['vocabularyId'] as String? : null;
       final clusterId = args is Map ? args['clusterId'] as String? : null;
@@ -95,10 +222,18 @@ class DiscoveryViewModel extends GetxController {
       return;
     }
 
+    final success = await _energyService.consumeEnergy(1);
+    if (!success) {
+      outOfEnergy.value = true;
+      return;
+    }
+
     await _learningService.recordDiscoveryContext(
       vocabularyId: currentState.vocabularyId,
       knowledgeLinkId: context.id,
     );
+    await _energyService.recordActivity();
+
     discoveredContextIds.add(context.id);
     discoveredContextIds.refresh();
     selectedContextId.value = context.id;

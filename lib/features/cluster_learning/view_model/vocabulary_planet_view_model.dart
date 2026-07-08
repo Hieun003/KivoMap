@@ -6,7 +6,7 @@ import '../../../data/kivo_seed_data.dart';
 import '../../../data/vocabulary_learning_service.dart';
 import 'vocabulary_planet_view_state.dart';
 
-const int _requiredContextsForSrs = 3;
+const int _requiredContextsForSrs = 5;
 
 class VocabularyPlanetViewModel extends GetxController {
   VocabularyPlanetViewModel({VocabularyLearningService? learningService})
@@ -128,7 +128,7 @@ class VocabularyPlanetViewModel extends GetxController {
   ) {
     final repetitionState = repetitionStates[vocabularyId];
     if (repetitionState != null) {
-      if (repetitionState.masteryLevel >= 10) {
+      if (repetitionState.masteryLevel >= 8) {
         return VocabularyNodeStatus.mastered;
       }
       if (repetitionState.isDue) {

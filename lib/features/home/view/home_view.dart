@@ -40,6 +40,7 @@ class HomeView extends GetView<HomeViewModel> {
 
           return _HomeDashboardContent(
             state: dashboardState,
+            bannerCountdownText: controller.bannerCountdownText.value,
             onStartLearning: controller.startLearning,
             onStartReview: controller.startReview,
             onCategorySelected: controller.selectCategory,
@@ -54,6 +55,7 @@ class HomeView extends GetView<HomeViewModel> {
 class _HomeDashboardContent extends StatelessWidget {
   const _HomeDashboardContent({
     required this.state,
+    required this.bannerCountdownText,
     required this.onStartLearning,
     required this.onStartReview,
     required this.onCategorySelected,
@@ -61,6 +63,7 @@ class _HomeDashboardContent extends StatelessWidget {
   });
 
   final HomeDashboardState state;
+  final String bannerCountdownText;
   final VoidCallback onStartLearning;
   final VoidCallback onStartReview;
   final ValueChanged<HomeCategoryChipData> onCategorySelected;
@@ -90,6 +93,7 @@ class _HomeDashboardContent extends StatelessWidget {
               SizedBox(height: KivoScale.h(45)),
               HomeReviewBanner(
                 status: state.bannerStatus,
+                customButtonLabel: bannerCountdownText.isNotEmpty ? bannerCountdownText : null,
                 onStartLearning: onStartLearning,
                 onStartReview: onStartReview,
               ),
