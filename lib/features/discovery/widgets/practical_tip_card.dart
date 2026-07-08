@@ -9,10 +9,12 @@ class PracticalTipCard extends StatelessWidget {
   const PracticalTipCard({
     super.key,
     required this.tip,
+    required this.tipEn,
     required this.keywords,
   });
 
   final String tip;
+  final String tipEn;
   final List<String> keywords;
 
   @override
@@ -45,12 +47,28 @@ class PracticalTipCard extends StatelessWidget {
                     fontSize: KivoScale.sp(18, min: 15),
                   ),
                 ),
-                SizedBox(height: KivoScale.h(8)),
-                KeywordRichText(
-                  text: tip,
-                  keywords: keywords,
-                  fontSize: KivoScale.sp(14.5, min: 12),
-                ),
+                if (tipEn.isNotEmpty) ...[
+                  SizedBox(height: KivoScale.h(8)),
+                  KeywordRichText(
+                    text: tipEn,
+                    keywords: keywords,
+                    fontSize: KivoScale.sp(14.5, min: 12),
+                  ),
+                ],
+                if (tip.isNotEmpty && tip != tipEn) ...[
+                  SizedBox(height: KivoScale.h(6)),
+                  const Divider(color: Color(0x33FFB000), height: 1),
+                  SizedBox(height: KivoScale.h(6)),
+                  Text(
+                    tip,
+                    style: KivoTextStyles.body.copyWith(
+                      color: KivoColors.secondaryText,
+                      fontSize: KivoScale.sp(13.5, min: 11),
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
