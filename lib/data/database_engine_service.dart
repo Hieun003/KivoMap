@@ -400,11 +400,11 @@ class DatabaseEngineService {
       if (!repetitionSnapshot.exists) {
         transaction.set(repetitionRef, {
           'vocabularyId': vocabularyId,
-          'masteryLevel': 1,
-          'intervalDays': 1,
+          'masteryLevel': 0,
+          'intervalDays': 0,
           'easinessFactor': 2.5,
           'reviewCount': 0,
-          'nextReviewAt': Timestamp.now(),
+          'nextReviewAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 20))),
           'lastReviewedAt': null,
           'createdAt': now,
           'updatedAt': now,
@@ -432,19 +432,36 @@ class DatabaseEngineService {
       final repetitionSnapshot = await transaction.get(repetitionRef);
       final current = repetitionSnapshot.data() ?? const <String, dynamic>{};
 
-      final currentMastery = (current['masteryLevel'] as num?)?.toInt() ?? 1;
-      final currentInterval = (current['intervalDays'] as num?)?.toInt() ?? 1;
+      final currentMastery = (current['masteryLevel'] as num?)?.toInt() ?? 0;
       final currentEase =
           (current['easinessFactor'] as num?)?.toDouble() ?? 2.5;
       final currentReviewCount = (current['reviewCount'] as num?)?.toInt() ?? 0;
 
-      final nextInterval = allCorrect ? max(1, currentInterval * 2) : 1;
+      final int nextMastery;
+      if (allCorrect) {
+        nextMastery = min(8, currentMastery + 1);
+      } else {
+        if (currentMastery == 0) {
+          nextMastery = 0;
+        } else {
+          nextMastery = max(1, currentMastery - 1);
+        }
+      }
+
+      final nextInterval = nextMastery == 0 ? 0 : switch (nextMastery) {
+        1 => 1,
+        2 => 3,
+        3 => 7,
+        4 => 14,
+        5 => 30,
+        6 => 60,
+        7 => 120,
+        8 => 240,
+        _ => 240,
+      };
       final nextEase = allCorrect
           ? min(3.0, currentEase + 0.1)
           : max(1.3, currentEase - 0.2);
-      final nextMastery = allCorrect
-          ? min(10, currentMastery + 1)
-          : max(1, currentMastery - 1);
 
       for (final attempt in attempts) {
         final recordRef = _users.doc(userId).collection('review_records').doc();
@@ -463,9 +480,9 @@ class DatabaseEngineService {
         'intervalDays': nextInterval,
         'easinessFactor': nextEase,
         'reviewCount': currentReviewCount + 1,
-        'nextReviewAt': Timestamp.fromDate(
-          now.toDate().add(Duration(days: nextInterval)),
-        ),
+        'nextReviewAt': nextMastery == 0
+            ? Timestamp.fromDate(now.toDate().add(const Duration(minutes: 20)))
+            : Timestamp.fromDate(now.toDate().add(Duration(days: nextInterval))),
         'lastReviewedAt': serverNow,
         'updatedAt': serverNow,
       }, SetOptions(merge: true));

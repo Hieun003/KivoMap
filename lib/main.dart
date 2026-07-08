@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import 'app/bindings/home_binding.dart';
+import 'app/bindings/review_binding.dart';
 import 'app/bindings/discovery_binding.dart';
 import 'app/bindings/vocabulary_planet_binding.dart';
 import 'app/navigation/main_navigation_shell.dart';
@@ -12,6 +13,7 @@ import 'app/routes/app_routes.dart';
 import 'app/theme/kivo_theme.dart';
 import 'features/cluster_learning/view/vocabulary_planet_view.dart';
 import 'features/discovery/view/discovery_matrix_view.dart';
+import 'features/review/view/review_view.dart';
 
 import 'data/database_engine_service.dart';
 
@@ -61,6 +63,11 @@ class MyApp extends StatelessWidget {
               name: AppRoutes.discoveryMatrix,
               page: () => const DiscoveryMatrixView(),
               binding: DiscoveryBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.review,
+              page: () => const ReviewView(),
+              binding: ReviewBinding(),
             ),
           ],
         );

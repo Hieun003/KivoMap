@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'dart:math';
 
+import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class VocabularyLearningService {
   static const String _repetitionStatesKey = 'kivo.repetition_states.v1';
   static const String _discoveryTracesKey = 'kivo.discovery_traces.v1';
+
+  final RxInt srsUpdateTrigger = 0.obs;
 
   final Map<String, RepetitionLearningState> _repetitionStates = {};
   final Map<String, Set<String>> _discoveredContextIdsByVocabulary = {};
@@ -46,18 +50,19 @@ class VocabularyLearningService {
     }
 
     final now = completedAt ?? DateTime.now();
-    const intervalDays = 1;
+    const intervalDays = 0;
     _repetitionStates[vocabularyId] = RepetitionLearningState(
       vocabularyId: vocabularyId,
-      masteryLevel: 1,
+      masteryLevel: 0,
       intervalDays: intervalDays,
       easinessFactor: 2.5,
       reviewCount: 0,
-      nextReviewAt: now.add(const Duration(days: intervalDays)),
+      nextReviewAt: now.add(const Duration(minutes: 20)),
       lastReviewedAt: null,
       learnedAt: now,
     );
     await _saveRepetitionStates();
+    srsUpdateTrigger.value++;
   }
 
   Map<String, RepetitionLearningState> repetitionStatesFor(
@@ -71,6 +76,105 @@ class VocabularyLearningService {
       }
     }
     return states;
+  }
+
+  Future<List<RepetitionLearningState>> dueRepetitionStates({
+    int limit = 20,
+  }) async {
+    await initialize();
+    final states =
+        _repetitionStates.values
+            .where((state) => state.isDue)
+            .toList(growable: false)
+          ..sort((a, b) {
+            final levelCompare = a.masteryLevel.compareTo(b.masteryLevel);
+            if (levelCompare != 0) return levelCompare;
+            return a.nextReviewAt.compareTo(b.nextReviewAt);
+          });
+    return states.take(limit).toList(growable: false);
+  }
+
+  Future<DateTime?> getNextReviewTime() async {
+    await initialize();
+    final futureStates = _repetitionStates.values
+        .where((state) => state.nextReviewAt.isAfter(DateTime.now()))
+        .toList(growable: false)
+      ..sort((a, b) => a.nextReviewAt.compareTo(b.nextReviewAt));
+    return futureStates.firstOrNull?.nextReviewAt;
+  }
+
+  static int _getIntervalForLevel(int level) {
+    return switch (level) {
+      1 => 1,
+      2 => 3,
+      3 => 7,
+      4 => 14,
+      5 => 30,
+      6 => 60,
+      7 => 120,
+      8 => 240,
+      _ => 240,
+    };
+  }
+
+  Future<void> completeVocabularyReview({
+    required String vocabularyId,
+    required Iterable<bool> attemptResults,
+    DateTime? reviewedAt,
+  }) async {
+    await initialize();
+    final attempts = attemptResults.toList(growable: false);
+    if (attempts.isEmpty) {
+      throw ArgumentError.value(attemptResults, 'attemptResults');
+    }
+
+    final now = reviewedAt ?? DateTime.now();
+    final current =
+        _repetitionStates[vocabularyId] ??
+        RepetitionLearningState(
+          vocabularyId: vocabularyId,
+          masteryLevel: 1,
+          intervalDays: 1,
+          easinessFactor: 2.5,
+          reviewCount: 0,
+          nextReviewAt: now,
+          lastReviewedAt: null,
+          learnedAt: now,
+        );
+
+    final allCorrect = attempts.every((isCorrect) => isCorrect);
+    final int nextMastery;
+    if (allCorrect) {
+      nextMastery = min(8, current.masteryLevel + 1);
+    } else {
+      if (current.masteryLevel == 0) {
+        nextMastery = 0;
+      } else {
+        nextMastery = max(1, current.masteryLevel - 1);
+      }
+    }
+    
+    final nextInterval = nextMastery == 0 ? 0 : _getIntervalForLevel(nextMastery);
+    final nextEase = allCorrect
+        ? min(3.0, current.easinessFactor + 0.1)
+        : max(1.3, current.easinessFactor - 0.2);
+
+    final nextReviewAt = nextMastery == 0
+        ? now.add(const Duration(minutes: 20))
+        : now.add(Duration(days: nextInterval));
+
+    _repetitionStates[vocabularyId] = RepetitionLearningState(
+      vocabularyId: vocabularyId,
+      masteryLevel: nextMastery,
+      intervalDays: nextInterval,
+      easinessFactor: nextEase,
+      reviewCount: current.reviewCount + 1,
+      nextReviewAt: nextReviewAt,
+      lastReviewedAt: now,
+      learnedAt: current.learnedAt,
+    );
+    await _saveRepetitionStates();
+    srsUpdateTrigger.value++;
   }
 
   int discoveredContextCountFor(String vocabularyId) {
