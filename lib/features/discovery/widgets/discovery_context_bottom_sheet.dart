@@ -8,7 +8,7 @@ import '../view_model/discovery_view_state.dart';
 import 'deep_dialogue_bubble.dart';
 import 'practical_tip_card.dart';
 
-class DiscoveryContextBottomSheet extends StatelessWidget {
+class DiscoveryContextBottomSheet extends StatefulWidget {
   const DiscoveryContextBottomSheet({
     super.key,
     required this.rootNode,
@@ -21,6 +21,67 @@ class DiscoveryContextBottomSheet extends StatelessWidget {
   final DiscoveryContextNode contextNode;
   final VoidCallback onUnderstood;
   final String? actionLabel;
+
+  @override
+  State<DiscoveryContextBottomSheet> createState() => _DiscoveryContextBottomSheetState();
+}
+
+class _DiscoveryContextBottomSheetState extends State<DiscoveryContextBottomSheet> {
+  int? _selectedAnswerIndex;
+  late List<_QuizOption> _shuffledOptions;
+  bool _isQuizActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initQuiz();
+  }
+
+  @override
+  void didUpdateWidget(covariant DiscoveryContextBottomSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.contextNode.id != widget.contextNode.id) {
+      _initQuiz();
+    }
+  }
+
+  void _initQuiz() {
+    _selectedAnswerIndex = null;
+    final node = widget.contextNode;
+
+    final canShow = node.dialogue.length >= 2 &&
+        node.wrongChoices.isNotEmpty &&
+        node.wrongChoicesVi.isNotEmpty;
+
+    if (!canShow) {
+      _shuffledOptions = [];
+      _isQuizActive = false;
+      return;
+    }
+
+    final correctOpt = _QuizOption(
+      text: node.dialogue[1].text.replaceAll('**', ''),
+      translation: node.dialogue[1].translation.replaceAll('**', ''),
+      isCorrect: true,
+    );
+
+    final options = <_QuizOption>[correctOpt];
+    for (var i = 0; i < node.wrongChoices.length; i++) {
+      final text = node.wrongChoices[i].replaceAll('**', '');
+      final translation = i < node.wrongChoicesVi.length
+          ? node.wrongChoicesVi[i].replaceAll('**', '')
+          : '';
+      options.add(_QuizOption(
+        text: text,
+        translation: translation,
+        isCorrect: false,
+      ));
+    }
+
+    options.shuffle();
+    _shuffledOptions = options;
+    _isQuizActive = true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,39 +119,87 @@ class DiscoveryContextBottomSheet extends StatelessWidget {
                     Center(child: const _SheetHandle()),
                     SizedBox(height: KivoScale.h(18)),
                     _DeepContextHeader(
-                      rootNode: rootNode,
-                      contextNode: contextNode,
+                      rootNode: widget.rootNode,
+                      contextNode: widget.contextNode,
                     ),
                     SizedBox(height: KivoScale.h(22)),
-                    _DeepContextLearningStack(
-                      rootNode: rootNode,
-                      contextNode: contextNode,
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox(width: double.infinity),
+                      secondChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _DeepContextLearningStack(
+                            rootNode: widget.rootNode,
+                            contextNode: widget.contextNode,
+                          ),
+                          SizedBox(height: KivoScale.h(18)),
+                        ],
+                      ),
+                      crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
                     ),
-                    SizedBox(height: KivoScale.h(18)),
-                    for (var i = 0; i < contextNode.dialogue.length; i += 1)
+                    if (!_isQuizActive) ...[
+                      for (var i = 0; i < widget.contextNode.dialogue.length; i += 1)
+                        DeepDialogueBubble(
+                          line: widget.contextNode.dialogue[i],
+                          alignRight: i.isOdd,
+                          keywords: keywords,
+                        ),
+                    ] else ...[
                       DeepDialogueBubble(
-                        line: contextNode.dialogue[i],
-                        alignRight: i.isOdd,
+                        line: widget.contextNode.dialogue[0],
+                        alignRight: false,
                         keywords: keywords,
                       ),
-                    if (contextNode.dialogue.isEmpty)
+                      _QuizBlock(
+                        options: _shuffledOptions,
+                        selectedAnswerIndex: _selectedAnswerIndex,
+                        onSelect: (index) {
+                          setState(() {
+                            _selectedAnswerIndex = index;
+                          });
+                          TtsService.instance.speak(
+                            _shuffledOptions[index].text,
+                            pitch: 0.82,
+                          );
+                        },
+                        speaker: widget.contextNode.dialogue[1].speaker,
+                      ),
+                    ],
+                    if (widget.contextNode.dialogue.isEmpty)
                       DeepDialogueBubble(
                         line: DiscoveryDialogueLine(
-                          speaker: contextNode.title,
-                          text: contextNode.sentence,
-                          translation: contextNode.sentenceVi,
+                          speaker: widget.contextNode.title,
+                          text: widget.contextNode.sentence,
+                          translation: widget.contextNode.sentenceVi,
                         ),
                         alignRight: false,
                         keywords: keywords,
                       ),
-                    SizedBox(height: KivoScale.h(6)),
-                    PracticalTipCard(tip: contextNode.tip, keywords: keywords),
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox(width: double.infinity),
+                      secondChild: Padding(
+                        padding: EdgeInsets.only(top: KivoScale.h(6)),
+                        child: PracticalTipCard(
+                          tip: widget.contextNode.tip,
+                          tipEn: widget.contextNode.tipEn,
+                          keywords: keywords,
+                        ),
+                      ),
+                      crossFadeState: (!_isQuizActive || _selectedAnswerIndex != null)
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 300),
+                    ),
                     SizedBox(height: KivoScale.h(18)),
                     _UnderstoodButton(
-                      label:
-                          actionLabel ??
+                      label: widget.actionLabel ??
                           '\u0110\u00e3 hi\u1ec3u li\u00ean k\u1ebft n\u00e0y \u{1F44D}',
-                      onPressed: onUnderstood,
+                      onPressed: (_isQuizActive && _selectedAnswerIndex == null)
+                          ? null
+                          : widget.onUnderstood,
                     ),
                   ],
                 ),
@@ -111,15 +220,15 @@ class DiscoveryContextBottomSheet extends StatelessWidget {
 
   List<String> get _deepContextKeywords {
     return {
-      rootNode.label,
-      rootNode.translation,
-      contextNode.title,
-      contextNode.translation,
-      for (final chunk in contextNode.englishChunks)
+      widget.rootNode.label,
+      widget.rootNode.translation,
+      widget.contextNode.title,
+      widget.contextNode.translation,
+      for (final chunk in widget.contextNode.englishChunks)
         if (chunk.tone == DiscoveryChipTone.target ||
             chunk.tone == DiscoveryChipTone.action)
           chunk.text.trim(),
-      for (final chunk in contextNode.vietnameseChunks)
+      for (final chunk in widget.contextNode.vietnameseChunks)
         if (chunk.tone == DiscoveryChipTone.target ||
             chunk.tone == DiscoveryChipTone.action)
           chunk.text.trim(),
@@ -511,40 +620,263 @@ class _VietnameseContextBlock extends StatelessWidget {
   }
 }
 
-class _UnderstoodButton extends StatelessWidget {
-  const _UnderstoodButton({required this.label, required this.onPressed});
+class _QuizOption {
+  final String text;
+  final String translation;
+  final bool isCorrect;
 
-  final String label;
-  final VoidCallback onPressed;
+  _QuizOption({
+    required this.text,
+    required this.translation,
+    required this.isCorrect,
+  });
+}
+
+class _QuizOptionWidget extends StatelessWidget {
+  const _QuizOptionWidget({
+    required this.option,
+    required this.isAnswered,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final _QuizOption option;
+  final bool isAnswered;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    Color surfaceColor = Colors.white;
+    Color borderColor = const Color(0xFFE4D7C9);
+    Color textColor = KivoColors.coffeeText;
+    double opacity = 1.0;
+
+    if (isAnswered) {
+      if (option.isCorrect) {
+        surfaceColor = const Color(0xFFE8F5E9);
+        borderColor = const Color(0xFF81C784);
+        textColor = const Color(0xFF2E7D32);
+      } else if (isSelected) {
+        surfaceColor = const Color(0xFFFFEBEE);
+        borderColor = const Color(0xFFE57373);
+        textColor = const Color(0xFFC62828);
+      } else {
+        surfaceColor = const Color(0xFFF9F7F4);
+        borderColor = const Color(0xFFEBE3DB);
+        textColor = KivoColors.secondaryText.withAlpha(153);
+        opacity = 0.7;
+      }
+    } else {
+      if (isSelected) {
+        surfaceColor = KivoColors.targetPurple.withAlpha(20);
+        borderColor = KivoColors.targetPurple;
+      }
+    }
+
+    return GestureDetector(
+      onTap: isAnswered ? null : onTap,
+      child: Opacity(
+        opacity: opacity,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          margin: EdgeInsets.only(bottom: KivoScale.h(10)),
+          padding: EdgeInsets.symmetric(
+            horizontal: KivoScale.w(16),
+            vertical: KivoScale.h(14),
+          ),
+          decoration: BoxDecoration(
+            color: surfaceColor,
+            borderRadius: BorderRadius.circular(KivoScale.r(14)),
+            border: Border.all(
+              color: borderColor,
+              width: isSelected || (isAnswered && option.isCorrect) ? 1.8 : 1.2,
+            ),
+            boxShadow: isAnswered ? null : KivoShadows.soft,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      option.text,
+                      style: KivoTextStyles.body.copyWith(
+                        color: textColor,
+                        fontSize: KivoScale.sp(15, min: 12),
+                        fontWeight: option.isCorrect && isAnswered
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (isAnswered) ...[
+                    SizedBox(width: KivoScale.w(8)),
+                    if (option.isCorrect)
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF2E7D32),
+                        size: 20,
+                      )
+                    else if (isSelected)
+                      const Icon(
+                        Icons.cancel_rounded,
+                        color: Color(0xFFC62828),
+                        size: 20,
+                      ),
+                  ],
+                ],
+              ),
+              if (isAnswered && option.translation.isNotEmpty) ...[
+                SizedBox(height: KivoScale.h(6)),
+                Text(
+                  option.translation,
+                  style: KivoTextStyles.body.copyWith(
+                    color: option.isCorrect
+                        ? const Color(0xFF4CAF50).withAlpha(216)
+                        : (isSelected
+                            ? const Color(0xFFD32F2F).withAlpha(204)
+                            : KivoColors.secondaryText.withAlpha(127)),
+                    fontSize: KivoScale.sp(13, min: 10.5),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuizBlock extends StatelessWidget {
+  const _QuizBlock({
+    required this.options,
+    required this.selectedAnswerIndex,
+    required this.onSelect,
+    required this.speaker,
+  });
+
+  final List<_QuizOption> options;
+  final int? selectedAnswerIndex;
+  final ValueChanged<int> onSelect;
+  final String speaker;
+
+  @override
+  Widget build(BuildContext context) {
+    final isAnswered = selectedAnswerIndex != null;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: KivoScale.h(16)),
+      padding: EdgeInsets.all(KivoScale.w(18)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3ECE4).withAlpha(127),
+        borderRadius: BorderRadius.circular(KivoScale.r(22)),
+        border: Border.all(color: const Color(0xFFE6D9CB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: KivoScale.w(8),
+                  vertical: KivoScale.h(3),
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE0C4A8),
+                  borderRadius: BorderRadius.circular(KivoScale.r(8)),
+                ),
+                child: Text(
+                  speaker,
+                  style: KivoTextStyles.caption.copyWith(
+                    color: KivoColors.coffeeText,
+                    fontWeight: FontWeight.w800,
+                    fontSize: KivoScale.sp(11.5, min: 9.5),
+                  ),
+                ),
+              ),
+              SizedBox(width: KivoScale.w(8)),
+              Text(
+                'tr\u1ea3 l\u1eddi th\u1ebf n\u00e0o cho t\u1ef1 nhi\u00ean? \ud83e\udd14',
+                style: KivoTextStyles.body.copyWith(
+                  color: KivoColors.secondaryText,
+                  fontWeight: FontWeight.w700,
+                  fontSize: KivoScale.sp(13.5, min: 11),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: KivoScale.h(14)),
+          ...List.generate(options.length, (index) {
+            final option = options[index];
+            return _QuizOptionWidget(
+              option: option,
+              isAnswered: isAnswered,
+              isSelected: selectedAnswerIndex == index,
+              onTap: () => onSelect(index),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnderstoodButton extends StatelessWidget {
+  const _UnderstoodButton({required this.label, this.onPressed});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final isEnabled = onPressed != null;
+
     return GestureDetector(
       onTap: onPressed,
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: KivoScale.h(14)),
-        decoration: BoxDecoration(
-          gradient: KivoGradients.orangeButton,
-          borderRadius: BorderRadius.circular(KivoScale.r(25)),
-          border: Border.all(color: const Color(0xFFFFB14D), width: 1.5),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFFD95300).withAlpha(190),
-              blurRadius: 0,
-              offset: Offset(0, KivoScale.h(7)),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: isEnabled ? 1.0 : 0.45,
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(vertical: KivoScale.h(14)),
+          decoration: BoxDecoration(
+            gradient: isEnabled ? KivoGradients.orangeButton : null,
+            color: isEnabled ? null : KivoColors.disabledText.withAlpha(76),
+            borderRadius: BorderRadius.circular(KivoScale.r(25)),
+            border: Border.all(
+              color: isEnabled ? const Color(0xFFFFB14D) : KivoColors.lightBorder,
+              width: 1.5,
             ),
-            ...KivoShadows.orangeGlow,
-          ],
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: KivoTextStyles.cta.copyWith(
-            fontSize: KivoScale.sp(26, min: 20),
-            shadows: const [
-              Shadow(color: Color(0x663A1608), offset: Offset(0, 2)),
-            ],
+            boxShadow: isEnabled
+                ? [
+                    BoxShadow(
+                      color: const Color(0xFFD95300).withAlpha(190),
+                      blurRadius: 0,
+                      offset: Offset(0, KivoScale.h(7)),
+                    ),
+                    ...KivoShadows.orangeGlow,
+                  ]
+                : null,
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: KivoTextStyles.cta.copyWith(
+              fontSize: KivoScale.sp(26, min: 20),
+              color: isEnabled ? Colors.white : KivoColors.disabledText,
+              shadows: isEnabled
+                  ? const [
+                      Shadow(color: Color(0x663A1608), offset: Offset(0, 2)),
+                    ]
+                  : null,
+            ),
           ),
         ),
       ),

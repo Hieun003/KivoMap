@@ -76,6 +76,8 @@ class DatabaseEngineService {
       final data = Map<String, dynamic>.from(detail)..remove('id');
 
       batch.set(_contextDetails.doc(detailId), {
+        'wrongChoices': const <String>[],
+        'wrongChoicesVi': const <String>[],
         ...data,
         'createdAt': now,
         'updatedAt': now,
@@ -197,6 +199,8 @@ class DatabaseEngineService {
       'knowledgeLinkId': null,
       'miniDialogue': const <Map<String, String>>[],
       'miniDialogueVi': const <Map<String, String>>[],
+      'wrongChoices': const <String>[],
+      'wrongChoicesVi': const <String>[],
       'realWorldTip': null,
       'realWorldTipVi': null,
       'audioUrl': null,

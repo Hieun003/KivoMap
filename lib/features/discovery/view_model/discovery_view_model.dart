@@ -385,6 +385,9 @@ class DiscoveryViewModel extends GetxController {
         'realWorldTipVi',
         fallback: _stringValue(detail, 'realWorldTip'),
       ),
+      tipEn: _stringValue(detail, 'realWorldTip'),
+      wrongChoices: _stringListValue(detail, 'wrongChoices'),
+      wrongChoicesVi: _stringListValue(detail, 'wrongChoicesVi'),
     );
   }
 
@@ -563,6 +566,14 @@ class DiscoveryViewModel extends GetxController {
     }
     final text = value.toString();
     return text.isEmpty ? fallback : text;
+  }
+
+  List<String> _stringListValue(Map<String, Object?>? source, String key) {
+    final value = source?[key];
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    return const [];
   }
 
   String _titleCase(String value) {

@@ -83,6 +83,9 @@ class DiscoveryContextNode {
     required this.vietnameseChunks,
     required this.dialogue,
     required this.tip,
+    required this.tipEn,
+    required this.wrongChoices,
+    required this.wrongChoicesVi,
   });
 
   final String id;
@@ -98,6 +101,9 @@ class DiscoveryContextNode {
   final List<DiscoverySentenceChunk> vietnameseChunks;
   final List<DiscoveryDialogueLine> dialogue;
   final String tip;
+  final String tipEn;
+  final List<String> wrongChoices;
+  final List<String> wrongChoicesVi;
   bool get isDiscovered => status == DiscoveryContextStatus.discovered;
 }
 
