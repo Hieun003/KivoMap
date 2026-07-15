@@ -132,19 +132,50 @@ class _OptionContent extends StatelessWidget {
         children: [
           _OptionIcon(iconKey: option.iconKey),
           SizedBox(height: KivoScale.h(24)),
-          Text(
-            shouldReveal ? '${option.word} / ${option.meaning}' : option.word,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: KivoTextStyles.cardTitle.copyWith(
-              color: KivoColors.inkText,
-              fontSize: KivoScale.sp(28, min: 17),
-              height: 1.15,
+          Flexible(
+            child: _OptionLabel(
+              text: shouldReveal
+                  ? '${option.word} / ${option.meaning}'
+                  : option.word,
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _OptionLabel extends StatelessWidget {
+  const _OptionLabel({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = KivoTextStyles.cardTitle.copyWith(
+      color: KivoColors.inkText,
+      fontSize: KivoScale.sp(28, min: 17),
+      height: 1.15,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Center(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: SizedBox(
+              width: constraints.maxWidth,
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

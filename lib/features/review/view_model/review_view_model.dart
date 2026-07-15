@@ -11,8 +11,13 @@ class ReviewViewModel extends GetxController {
   ReviewViewModel({
     VocabularyLearningService? learningService,
     EnergyService? energyService,
-  })  : _learningService = learningService ?? Get.find<VocabularyLearningService>(),
-        _energyService = energyService ?? Get.find<EnergyService>();
+  }) : _learningService =
+           learningService ?? Get.find<VocabularyLearningService>(),
+       _energyService =
+           energyService ??
+           (Get.isRegistered<EnergyService>()
+               ? Get.find<EnergyService>()
+               : EnergyService());
 
   static const int _questionCount = 3;
   static const int _optionCount = 4;
@@ -24,6 +29,7 @@ class ReviewViewModel extends GetxController {
   final RxnString errorMessage = RxnString();
   final Rxn<ReviewSessionState> state = Rxn<ReviewSessionState>();
   final List<bool> _attemptResults = <bool>[];
+  bool _isContinuing = false;
 
   @override
   void onInit() {
@@ -43,7 +49,8 @@ class ReviewViewModel extends GetxController {
       state.value = nextState;
       _attemptResults.clear();
     } catch (_) {
-      errorMessage.value = 'Chưa thể mở phiên ôn tập. Hãy thử lại nhé.';
+      errorMessage.value =
+          'ChÄ‚â€ Ă‚Â°a thÄ‚Â¡Ă‚Â»Ă†â€™ mÄ‚Â¡Ă‚Â»Ă…Â¸ phiĂ„â€Ă‚Âªn Ă„â€Ă‚Â´n tÄ‚Â¡Ă‚ÂºĂ‚Â­p. HĂ„â€Ă‚Â£y thÄ‚Â¡Ă‚Â»Ă‚Â­ lÄ‚Â¡Ă‚ÂºĂ‚Â¡i nhĂ„â€Ă‚Â©.';
     } finally {
       isLoading.value = false;
     }
@@ -74,7 +81,7 @@ class ReviewViewModel extends GetxController {
 
   Future<void> continueReview() async {
     final currentState = state.value;
-    if (currentState == null || !currentState.hasSelection) {
+    if (currentState == null || !currentState.hasSelection || _isContinuing) {
       return;
     }
 
@@ -86,12 +93,36 @@ class ReviewViewModel extends GetxController {
       return;
     }
 
-    await _learningService.completeVocabularyReview(
-      vocabularyId: currentState.vocabularyId,
-      attemptResults: _attemptResults,
-    );
-    await _energyService.recordActivity();
-    state.value = currentState.copyWith(isComplete: true);
+    _isContinuing = true;
+    try {
+      await _learningService.completeVocabularyReview(
+        vocabularyId: currentState.vocabularyId,
+        attemptResults: _attemptResults,
+      );
+      await _energyService.recordActivity();
+
+      final nextVocabulary = await _nextDueVocabularyForReview();
+      if (nextVocabulary == null) {
+        state.value = currentState.copyWith(isComplete: true);
+        return;
+      }
+
+      _attemptResults.clear();
+      state.value = _stateFromVocabulary(nextVocabulary);
+    } finally {
+      _isContinuing = false;
+    }
+  }
+
+  Future<Map<String, Object?>?> _nextDueVocabularyForReview() async {
+    final dueStates = await _learningService.dueRepetitionStates(limit: 20);
+    for (final dueState in dueStates) {
+      final vocabulary = _findById(seedVocabularies, dueState.vocabularyId);
+      if (vocabulary != null) {
+        return vocabulary;
+      }
+    }
+    return null;
   }
 
   Future<Map<String, Object?>> _nextVocabularyForReview() async {
@@ -106,15 +137,7 @@ class ReviewViewModel extends GetxController {
       }
     }
 
-    final dueStates = await _learningService.dueRepetitionStates(limit: 20);
-    for (final dueState in dueStates) {
-      final vocabulary = _findById(seedVocabularies, dueState.vocabularyId);
-      if (vocabulary != null) {
-        return vocabulary;
-      }
-    }
-
-    return seedVocabularies.first;
+    return await _nextDueVocabularyForReview() ?? seedVocabularies.first;
   }
 
   ReviewSessionState _stateFromVocabulary(Map<String, Object?> vocabulary) {

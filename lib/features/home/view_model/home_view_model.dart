@@ -13,8 +13,9 @@ class HomeViewModel extends GetxController {
   HomeViewModel({
     VocabularyLearningService? learningService,
     EnergyService? energyService,
-  })  : _learningService = learningService ?? Get.find<VocabularyLearningService>(),
-        _energyService = energyService ?? Get.find<EnergyService>();
+  }) : _learningService =
+           learningService ?? Get.find<VocabularyLearningService>(),
+       _energyService = energyService ?? Get.find<EnergyService>();
 
   final VocabularyLearningService _learningService;
   final EnergyService _energyService;
@@ -80,13 +81,17 @@ class HomeViewModel extends GetxController {
   void _updateBannerCountdown() {
     _bannerTimer?.cancel();
     final currentState = state.value;
-    if (currentState == null || currentState.bannerStatus != HomeReviewBannerStatus.noDueReview) {
+    if (currentState == null ||
+        currentState.bannerStatus != HomeReviewBannerStatus.noDueReview) {
       bannerCountdownText.value = '';
       return;
     }
 
     _runBannerCountdownTick();
-    _bannerTimer = Timer.periodic(const Duration(minutes: 1), (_) => _runBannerCountdownTick());
+    _bannerTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => _runBannerCountdownTick(),
+    );
   }
 
   Future<void> _reloadSrsStateOnly() async {
@@ -174,6 +179,12 @@ class HomeViewModel extends GetxController {
   }
 
   void openTopic(HomeContextTopicData topic) {
+    final topicKey = _normalizeKey(topic.iconKey);
+    if (topicKey == 'secret_path' || topicKey == 'secret_passage') {
+      Get.toNamed(AppRoutes.secretPassage);
+      return;
+    }
+
     Get.toNamed(
       AppRoutes.vocabularyPlanet,
       arguments: {
@@ -311,6 +322,7 @@ class HomeViewModel extends GetxController {
       'travel' => 'Đời Xê Dịch',
       'daily' => 'Sinh hoạt hằng ngày',
       'work' => 'Công Sở',
+      'secret_passage' => 'L\u1ed1i \u0111i b\u00ed m\u1eadt',
       _ => _titleCase(category),
     };
   }
@@ -320,6 +332,7 @@ class HomeViewModel extends GetxController {
       'travel' => 'travel',
       'daily' => 'restaurant',
       'work' => 'office',
+      'secret_passage' => 'secret_path',
       _ => _normalizeKey(category),
     };
   }
@@ -329,6 +342,7 @@ class HomeViewModel extends GetxController {
       'travel' => HomeAccentColor.blue,
       'daily' => HomeAccentColor.green,
       'work' => HomeAccentColor.purple,
+      'secret_passage' => HomeAccentColor.pink,
       _ => HomeAccentColor.orange,
     };
   }
