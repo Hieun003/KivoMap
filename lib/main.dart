@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:developer' as developer;
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -14,23 +17,49 @@ import 'app/theme/kivo_theme.dart';
 import 'features/cluster_learning/view/vocabulary_planet_view.dart';
 import 'features/discovery/view/discovery_matrix_view.dart';
 import 'features/review/view/review_view.dart';
+import 'features/passageway/view/passageway_cave_list_view.dart';
+import 'features/secret_passage/view/secret_passage_intro_view.dart';
 
 import 'data/database_engine_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-
-  final dbEngine = DatabaseEngineService();
-  await dbEngine.seedStaticKnowledgeBase();
-  await dbEngine.activateUserRuntimeEnvironment(
-    userId: 'test_user_id_123',
-    name: 'KivoMap Developer',
-    email: 'dev.kivomap@gmail.com',
-  );
-  await dbEngine.bootstrapFirestoreSchema(userId: 'test_user_id_123');
-
   runApp(const MyApp());
+  unawaited(_initializeFirebase());
+}
+
+Future<void> _initializeFirebase() async {
+  try {
+    await Firebase.initializeApp();
+    unawaited(_bootstrapFirestore());
+  } catch (error, stackTrace) {
+    developer.log(
+      'Firebase initialization failed.',
+      name: 'KivoMap',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
+}
+
+Future<void> _bootstrapFirestore() async {
+  try {
+    final dbEngine = DatabaseEngineService();
+    await dbEngine.seedStaticKnowledgeBase();
+    await dbEngine.activateUserRuntimeEnvironment(
+      userId: 'test_user_id_123',
+      name: 'KivoMap Developer',
+      email: 'dev.kivomap@gmail.com',
+    );
+    await dbEngine.bootstrapFirestoreSchema(userId: 'test_user_id_123');
+  } catch (error, stackTrace) {
+    developer.log(
+      'Firestore bootstrap failed.',
+      name: 'KivoMap',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -68,6 +97,14 @@ class MyApp extends StatelessWidget {
               name: AppRoutes.review,
               page: () => const ReviewView(),
               binding: ReviewBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.secretPassage,
+              page: () => const SecretPassageIntroView(),
+            ),
+            GetPage(
+              name: AppRoutes.passageway,
+              page: () => const PassagewayCaveListView(),
             ),
           ],
         );

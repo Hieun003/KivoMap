@@ -73,6 +73,7 @@ flutter:
     - asset/passageway/
     - asset/rewards/
     - asset/story/
+    - asset/story/mystery_stone_gate_shards/
     - asset/UI/
   # To add assets to your application, add an assets section, like this:
   # assets:
