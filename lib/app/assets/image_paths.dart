@@ -12,14 +12,19 @@ abstract final class KivoImagePaths {
   static const String kivoChallengeFail =
       '$base/mascot/kivo_challenge_fail.png';
   static const String kivoAnswerCorrect =
-      '$base/mascot/kivo_answer_correct.png';
-  static const String kivoAnswerWrong = '$base/mascot/kivo_answer_wrong.png';
+      '$base/mascot/kivo_answer_correct_transparent_aligned.png';
+  static const String kivoAnswerWrong =
+      '$base/mascot/kivo_answer_wrong_transparent_aligned.png';
 
   // Story / dark challenge scenes
   static const String caveIntro = '$base/story/cave_intro.png';
   static const String cavePillars = '$base/story/cave_pillars.png';
   static const String secretCaveGate = '$base/story/secret_cave_gate.png';
   static const String mysteryStoneGate = '$base/story/mystery_stone_gate.png';
+  static const String mysteryStoneDisc =
+      '$base/story/mystery_stone_gate_shards/stone_disc.png';
+  static String mysteryStoneShard(int index) =>
+      '$base/story/mystery_stone_gate_shards/stone_shard_$index.png';
   static const String luciferShadow = '$base/story/lucifer_shadow.png';
 
   // Passageway nodes
@@ -37,6 +42,8 @@ abstract final class KivoImagePaths {
   static const String magicSpark1 = '$base/effects/magic_spark_1.png';
   static const String magicSpark2 = '$base/effects/magic_spark_2.png';
   static const String magicSpark3 = '$base/effects/magic_spark_3.png';
+
+  // Full-screen UI scenes
 
   // Generic icons / learning objects
   static const String contextMap = '$base/icons/context_map.png';
