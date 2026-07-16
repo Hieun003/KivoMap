@@ -50,7 +50,7 @@ class ReviewViewModel extends GetxController {
       _attemptResults.clear();
     } catch (_) {
       errorMessage.value =
-          'ChÄ‚â€ Ă‚Â°a thÄ‚Â¡Ă‚Â»Ă†â€™ mÄ‚Â¡Ă‚Â»Ă…Â¸ phiĂ„â€Ă‚Âªn Ă„â€Ă‚Â´n tÄ‚Â¡Ă‚ÂºĂ‚Â­p. HĂ„â€Ă‚Â£y thÄ‚Â¡Ă‚Â»Ă‚Â­ lÄ‚Â¡Ă‚ÂºĂ‚Â¡i nhĂ„â€Ă‚Â©.';
+          'Chưa thể mở phiên ôn tập. Hãy thử lại nhé.';
     } finally {
       isLoading.value = false;
     }
