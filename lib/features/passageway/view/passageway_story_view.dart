@@ -5,6 +5,9 @@ import 'package:phosphor_flutter/phosphor_flutter.dart';
 
 import '../../../app/assets/image_paths.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../data/passageway_story_catalog.dart';
+import '../model/passageway_story_stage.dart';
+import '../view_model/passageway_story_controller.dart';
 
 class PassagewayStoryView extends StatefulWidget {
   const PassagewayStoryView({
@@ -28,12 +31,17 @@ class PassagewayStoryView extends StatefulWidget {
 class _PassagewayStoryViewState extends State<PassagewayStoryView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
-  int? _selectedIndex;
-  bool _showSuccessDialog = false;
+  late final PassagewayStoryController _storyController;
 
   @override
   void initState() {
     super.initState();
+    _storyController = PassagewayStoryController(
+      stage: PassagewayStoryCatalog.resolve(
+        stageNumber: widget.stageNumber,
+        stageName: widget.stageName,
+      ),
+    );
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -46,18 +54,18 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
     super.dispose();
   }
 
-  void _onOptionSelected(int index) {
-    if (_selectedIndex != null) return; // Answer already selected
-    setState(() {
-      _selectedIndex = index;
-    });
+  void _onOptionSelected(PassagewayChoice choice) {
+    final selectedChoice = _storyController.selectChoice(choice.id);
+    if (selectedChoice == null) {
+      return;
+    }
+    setState(() {});
 
-    if (index == 0) {
-      // Correct answer A
+    if (selectedChoice.isCorrect) {
       Future.delayed(const Duration(milliseconds: 800), () {
         if (mounted) {
           setState(() {
-            _showSuccessDialog = true;
+            _storyController.revealSuccess();
           });
         }
       });
@@ -104,7 +112,8 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                       _buildAnswerChoices(scale),
 
                       // 6. Success Overlay Dialog
-                      if (_showSuccessDialog) _buildSuccessOverlay(scale),
+                      if (_storyController.state.showSuccess)
+                        _buildSuccessOverlay(scale),
                     ],
                   ),
                 ),
@@ -254,28 +263,28 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                         TextSpan(
                           children: [
                             TextSpan(
-                              text: 'Kivo: ',
+                              text: '${_storyController.stage.guideName}: ',
                               style: KivoTextStyles.darkAccent.copyWith(
                                 fontSize: 24 * scale,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             TextSpan(
-                              text: '‘Hãy nhắm mắt lại... Ta sẽ đưa ngươi vào ',
+                              text: _storyController.stage.introLead,
                               style: KivoTextStyles.darkBody.copyWith(
                                 fontSize: 24 * scale,
                                 color: KivoColors.cream,
                               ),
                             ),
                             TextSpan(
-                              text: 'Ảo cảnh Bến Chim Sắt',
+                              text: _storyController.stage.introHighlight,
                               style: KivoTextStyles.darkAccent.copyWith(
                                 fontSize: 24 * scale,
                                 fontWeight: FontWeight.w900,
                               ),
                             ),
                             TextSpan(
-                              text: '!‘',
+                              text: _storyController.stage.introTail,
                               style: KivoTextStyles.darkBody.copyWith(
                                 fontSize: 24 * scale,
                                 color: KivoColors.cream,
@@ -315,7 +324,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Tên lính canh gắt lớn:',
+                                  _storyController.stage.guardName,
                                   style: KivoTextStyles.darkBody.copyWith(
                                     fontSize: 18 * scale,
                                     color: KivoColors.cream.withAlpha(160),
@@ -325,7 +334,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                                 ),
                                 SizedBox(height: 4 * scale),
                                 Text(
-                                  '‘Hey! You cannot bring this bottle through security!’',
+                                  _storyController.stage.guardDialogue,
                                   style: KivoTextStyles.darkBody.copyWith(
                                     fontSize: 24 * scale,
                                     color: Colors.white,
@@ -356,7 +365,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                           ),
                           SizedBox(width: 16 * scale),
                           Text(
-                            'Ngươi chọn khẩu chú nào để đáp lại?',
+                            _storyController.stage.prompt,
                             style: KivoTextStyles.darkAccent.copyWith(
                               fontSize: 22 * scale,
                               color: KivoColors.cream,
@@ -434,10 +443,10 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
   }
 
   Widget _buildMascotSection(double scale) {
-    final hasAnswered = _selectedIndex != null;
-    final mascotImagePath = !hasAnswered
+    final selectedChoice = _storyController.selectedChoice;
+    final mascotImagePath = selectedChoice == null
         ? KivoImagePaths.kivoStoryTeller
-        : _selectedIndex == 0
+        : selectedChoice.isCorrect
         ? KivoImagePaths.kivoAnswerCorrect
         : KivoImagePaths.kivoAnswerWrong;
 
@@ -522,11 +531,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
   }
 
   Widget _buildAnswerChoices(double scale) {
-    final choices = const [
-      'Oh, sorry! I will throw it away right now.',
-      'Really? It’s just a water bottle. What’s the problem?',
-      'I understand the rule, but could you make an exception?',
-    ];
+    final choices = _storyController.stage.choices;
 
     return Positioned(
       left: 37 * scale,
@@ -535,18 +540,17 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: List.generate(choices.length, (index) {
-          final label = String.fromCharCode(65 + index); // A, B, C
-          final isSelected = _selectedIndex == index;
-          final hasAnswered = _selectedIndex != null;
+          final choice = choices[index];
+          final state = _storyController.state;
 
           return _AnswerChoiceCard(
-            label: '$label.',
-            text: choices[index],
-            index: index,
-            isSelected: isSelected,
-            hasAnswered: hasAnswered,
+            label: choice.label,
+            text: choice.text,
+            isCorrect: choice.isCorrect,
+            isSelected: state.selectedChoiceId == choice.id,
+            hasAnswered: state.hasAnswered,
             scaleFactor: scale,
-            onTap: () => _onOptionSelected(index),
+            onTap: () => _onOptionSelected(choice),
           );
         }),
       ),
@@ -593,7 +597,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
 
               // Title
               Text(
-                'Khẩu chú chính xác!',
+                _storyController.stage.successTitle,
                 textAlign: TextAlign.center,
                 style: KivoTextStyles.darkAccent.copyWith(
                   fontSize: 34 * scale,
@@ -605,7 +609,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
 
               // Description
               Text(
-                'Bạn đã đáp lại tên lính canh an ninh một cách lịch sự để giải quyết tình huống và bắt đầu bước qua Bến Chim Sắt thành công.',
+                _storyController.stage.successDescription,
                 textAlign: TextAlign.center,
                 style: KivoTextStyles.darkBody.copyWith(
                   fontSize: 20 * scale,
@@ -636,8 +640,8 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  child: const Text(
-                    'Quay lại Bản đồ',
+                  child: Text(
+                    _storyController.stage.completionLabel,
                     textScaler: TextScaler.noScaling,
                   ),
                 ),
@@ -653,7 +657,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
 class _AnswerChoiceCard extends StatefulWidget {
   final String label;
   final String text;
-  final int index;
+  final bool isCorrect;
   final bool isSelected;
   final bool hasAnswered;
   final VoidCallback onTap;
@@ -662,7 +666,7 @@ class _AnswerChoiceCard extends StatefulWidget {
   const _AnswerChoiceCard({
     required this.label,
     required this.text,
-    required this.index,
+    required this.isCorrect,
     required this.isSelected,
     required this.hasAnswered,
     required this.onTap,
@@ -679,7 +683,7 @@ class _AnswerChoiceCardState extends State<_AnswerChoiceCard> {
   @override
   Widget build(BuildContext context) {
     final scale = widget.scaleFactor;
-    final index = widget.index;
+    final isCorrect = widget.isCorrect;
     final isSelected = widget.isSelected;
     final hasAnswered = widget.hasAnswered;
 
@@ -691,7 +695,7 @@ class _AnswerChoiceCardState extends State<_AnswerChoiceCard> {
     Color letterColor = KivoColors.runeGold;
 
     if (hasAnswered) {
-      if (index == 0) {
+      if (isCorrect) {
         cardColor = const Color(0xFFE2F3E7);
         borderColor = Colors.green.shade600;
         textColor = Colors.green.shade900;
@@ -730,7 +734,7 @@ class _AnswerChoiceCardState extends State<_AnswerChoiceCard> {
             borderRadius: BorderRadius.circular(24 * scale),
             border: Border.all(
               color: borderColor,
-              width: isSelected || (hasAnswered && index == 0)
+              width: isSelected || (hasAnswered && isCorrect)
                   ? 2.8 * scale
                   : 1.6 * scale,
             ),
