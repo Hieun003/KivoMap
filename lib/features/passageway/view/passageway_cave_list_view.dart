@@ -2,9 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/assets/image_paths.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
+import '../../../data/kivo_seed_data.dart';
 import 'passageway_story_view.dart';
 
 enum PassagewayStageStatus { completed, current, locked }
@@ -13,17 +15,15 @@ class PassagewayCaveListView extends StatefulWidget {
   const PassagewayCaveListView({super.key, this.currentStageIndex = 1});
 
   static const double sourceWidth = 852;
-  static const double sourceHeight = 1846;
-  static const double sourceAspectRatio = sourceHeight / sourceWidth;
+  static double sourceHeight(int stageCount) => 122.0 + (stageCount - 1) * 436.0 + 250.0;
 
   final int currentStageIndex;
 
-  static const List<_PassagewayStage> _stages = [
-    _PassagewayStage(name: 'Qu\u00E1n N\u01B0\u1EDBc \u0110\u1EAFng'),
-    _PassagewayStage(name: 'B\u1EBFn Chim S\u1EAFt'),
-    _PassagewayStage(name: '???'),
-    _PassagewayStage(name: '???'),
-  ];
+  static List<String> get stageNames => seedPassagewayCombos.map((combo) {
+    final title = combo['title']?.toString() ?? '';
+    final name = title.replaceAll('Rắc rối ở ', '');
+    return name.isNotEmpty ? name[0].toUpperCase() + name.substring(1) : name;
+  }).toList();
 
   @override
   State<PassagewayCaveListView> createState() => _PassagewayCaveListViewState();
@@ -35,10 +35,12 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
   late final AnimationController _heartbeatController;
   late final Animation<double> _introAnimation;
   late final Animation<double> _heartbeatAnimation;
+  int _unlockedStageIndex = 1;
 
   @override
   void initState() {
     super.initState();
+    _loadProgress();
     _introController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 980),
@@ -98,8 +100,22 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
     super.dispose();
   }
 
+  Future<void> _loadProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _unlockedStageIndex = prefs.getInt('kivo.passageway.unlocked_index') ?? 1;
+        });
+      }
+    } catch (e) {
+      Get.log('Error loading passageway progress: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final stages = PassagewayCaveListView.stageNames;
     return Scaffold(
       backgroundColor: KivoColors.darkCave,
       body: SafeArea(
@@ -110,8 +126,9 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
               0.0,
               PassagewayCaveListView.sourceWidth,
             );
+            final currentSourceHeight = PassagewayCaveListView.sourceHeight(stages.length);
             final sceneHeight =
-                sceneWidth * PassagewayCaveListView.sourceAspectRatio;
+                sceneWidth * (currentSourceHeight / PassagewayCaveListView.sourceWidth);
             final scale = sceneWidth / PassagewayCaveListView.sourceWidth;
 
             return SingleChildScrollView(
@@ -140,6 +157,7 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
                                 painter: _PassagewayPathPainter(
                                   scale: scale,
                                   progress: intro,
+                                  stageCount: stages.length,
                                 ),
                               ),
                             ),
@@ -147,17 +165,18 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
                           _BackButton(scale: scale),
                           for (
                             var index = 0;
-                            index < PassagewayCaveListView._stages.length;
+                            index < stages.length;
                             index += 1
                           )
                             _StageNode(
                               key: ValueKey('passageway-stage-$index'),
                               stageNumber: index + 1,
-                              name: PassagewayCaveListView._stages[index].name,
+                              name: stages[index],
                               status: _statusFor(index),
                               top: _nodeTop(index),
                               scale: scale,
                               heartbeat: _heartbeatAnimation.value,
+                              onRefresh: _loadProgress,
                             ),
                         ],
                       );
@@ -173,27 +192,18 @@ class _PassagewayCaveListViewState extends State<PassagewayCaveListView>
   }
 
   PassagewayStageStatus _statusFor(int index) {
-    if (index < widget.currentStageIndex) {
+    if (index < _unlockedStageIndex - 1) {
       return PassagewayStageStatus.completed;
     }
-    if (index == widget.currentStageIndex) {
+    if (index == _unlockedStageIndex - 1) {
       return PassagewayStageStatus.current;
     }
     return PassagewayStageStatus.locked;
   }
 
-  static double _nodeTop(int index) => switch (index) {
-    0 => 122,
-    1 => 558,
-    2 => 992,
-    _ => 1396,
-  };
-}
-
-class _PassagewayStage {
-  const _PassagewayStage({required this.name});
-
-  final String name;
+  double _nodeTop(int index) {
+    return 122.0 + index * 436.0;
+  }
 }
 
 class _PassagewayBackdrop extends StatelessWidget {
@@ -259,6 +269,7 @@ class _StageNode extends StatelessWidget {
     required this.top,
     required this.scale,
     required this.heartbeat,
+    this.onRefresh,
   });
 
   final int stageNumber;
@@ -267,6 +278,7 @@ class _StageNode extends StatelessWidget {
   final double top;
   final double scale;
   final double heartbeat;
+  final VoidCallback? onRefresh;
 
   bool get _isCurrent => status == PassagewayStageStatus.current;
   bool get _isLocked => status == PassagewayStageStatus.locked;
@@ -298,7 +310,9 @@ class _StageNode extends StatelessWidget {
                 stageNumber: stageNumber,
                 stageName: name,
               ),
-            );
+            )?.then((_) {
+              onRefresh?.call();
+            });
           }
         },
         child: Column(
@@ -527,10 +541,15 @@ class _LabelDiamond extends StatelessWidget {
 }
 
 class _PassagewayPathPainter extends CustomPainter {
-  const _PassagewayPathPainter({required this.scale, required this.progress});
+  const _PassagewayPathPainter({
+    required this.scale,
+    required this.progress,
+    required this.stageCount,
+  });
 
   final double scale;
   final double progress;
+  final int stageCount;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -540,15 +559,19 @@ class _PassagewayPathPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final centerX = size.width / 2;
-    final segments = const [
-      (from: 412.0, to: 542.0),
-      (from: 846.0, to: 978.0),
-      (from: 1278.0, to: 1378.0),
-      (from: 1682.0, to: 1748.0),
-    ];
+
+    final List<({double from, double to})> segments = [];
+    for (int i = 0; i < stageCount - 1; i++) {
+      final fromY = 122.0 + i * 436.0 + 250.0 + 38.0;
+      final toY = 122.0 + (i + 1) * 436.0 - 16.0;
+      segments.add((from: fromY, to: toY));
+    }
+
+    final double startSegmentThreshold = stageCount > 1 ? 0.9 / (stageCount - 1) : 0.1;
+    final double segmentDuration = stageCount > 1 ? 1.0 / (stageCount - 1) : 1.0;
 
     for (var index = 0; index < segments.length; index += 1) {
-      final segmentProgress = ((progress - index * 0.08) / 0.58).clamp(
+      final segmentProgress = ((progress - index * startSegmentThreshold) / segmentDuration).clamp(
         0.0,
         1.0,
       );
@@ -620,6 +643,8 @@ class _PassagewayPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _PassagewayPathPainter oldDelegate) {
-    return oldDelegate.scale != scale || oldDelegate.progress != progress;
+    return oldDelegate.scale != scale ||
+        oldDelegate.progress != progress ||
+        oldDelegate.stageCount != stageCount;
   }
 }

@@ -1,13 +1,16 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/assets/image_paths.dart';
 import '../../../app/theme/kivo_theme_tokens.dart';
 import '../data/passageway_story_catalog.dart';
 import '../model/passageway_story_stage.dart';
 import '../view_model/passageway_story_controller.dart';
+import 'passageway_cave_list_view.dart';
 
 class PassagewayStoryView extends StatefulWidget {
   const PassagewayStoryView({
@@ -16,7 +19,8 @@ class PassagewayStoryView extends StatefulWidget {
     required this.stageName,
   });
 
-  // Adjusted sourceHeight to 1540 (from 1846) to compress layout and push choices up
+  // The scene keeps the original visual proportions, but can grow vertically
+  // when a stage contains longer dialogue or answers.
   static const double sourceWidth = 852;
   static const double sourceHeight = 1540;
   static const double sourceAspectRatio = sourceHeight / sourceWidth;
@@ -31,15 +35,23 @@ class PassagewayStoryView extends StatefulWidget {
 class _PassagewayStoryViewState extends State<PassagewayStoryView>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
-  late final PassagewayStoryController _storyController;
+  late PassagewayStoryController _storyController;
+  int _currentStageIndex = 0;
+  late int _currentStageNumber;
+  late String _currentStageName;
+  Timer? _autoProceedTimer;
+  int _secondsRemaining = 5;
 
   @override
   void initState() {
     super.initState();
+    _currentStageNumber = widget.stageNumber;
+    _currentStageName = widget.stageName;
     _storyController = PassagewayStoryController(
       stage: PassagewayStoryCatalog.resolve(
-        stageNumber: widget.stageNumber,
-        stageName: widget.stageName,
+        stageNumber: _currentStageNumber,
+        stageName: _currentStageName,
+        stageIndex: _currentStageIndex,
       ),
     );
     _pulseController = AnimationController(
@@ -50,8 +62,80 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
 
   @override
   void dispose() {
+    _autoProceedTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveProgress(int completedStageNumber) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUnlocked = prefs.getInt('kivo.passageway.unlocked_index') ?? 1;
+      if (completedStageNumber >= currentUnlocked) {
+        await prefs.setInt('kivo.passageway.unlocked_index', completedStageNumber + 1);
+      }
+    } catch (e) {
+      Get.log('Error saving passageway progress: $e');
+    }
+  }
+
+  Future<void> _saveProgressAndGoBack() async {
+    _autoProceedTimer?.cancel();
+    await _saveProgress(_currentStageNumber);
+    Get.back(); // Close screen
+  }
+
+  void _startAutoProceedTimer() {
+    _autoProceedTimer?.cancel();
+    setState(() {
+      _secondsRemaining = 5;
+    });
+
+    final stageNames = PassagewayCaveListView.stageNames;
+    final hasNextCombo = _currentStageNumber < stageNames.length;
+    if (!hasNextCombo) {
+      return;
+    }
+
+    _autoProceedTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_secondsRemaining > 1) {
+          _secondsRemaining--;
+        } else {
+          timer.cancel();
+          _proceedToNextCombo();
+        }
+      });
+    });
+  }
+
+  Future<void> _proceedToNextCombo() async {
+    _autoProceedTimer?.cancel();
+    await _saveProgress(_currentStageNumber);
+
+    final nextStageNumber = _currentStageNumber + 1;
+    final stageNames = PassagewayCaveListView.stageNames;
+
+    if (nextStageNumber <= stageNames.length) {
+      setState(() {
+        _currentStageNumber = nextStageNumber;
+        _currentStageName = stageNames[nextStageNumber - 1];
+        _currentStageIndex = 0;
+        _storyController = PassagewayStoryController(
+          stage: PassagewayStoryCatalog.resolve(
+            stageNumber: _currentStageNumber,
+            stageName: _currentStageName,
+            stageIndex: _currentStageIndex,
+          ),
+        );
+      });
+    } else {
+      Get.back();
+    }
   }
 
   void _onOptionSelected(PassagewayChoice choice) {
@@ -62,13 +146,38 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
     setState(() {});
 
     if (selectedChoice.isCorrect) {
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted) {
-          setState(() {
-            _storyController.revealSuccess();
-          });
-        }
-      });
+      final nextStageIndex = _currentStageIndex + 1;
+      final hasNextStage = PassagewayStoryCatalog.hasStage(
+        stageNumber: _currentStageNumber,
+        stageName: _currentStageName,
+        stageIndex: nextStageIndex,
+      );
+
+      if (hasNextStage) {
+        Future.delayed(const Duration(milliseconds: 1500), () {
+          if (mounted) {
+            setState(() {
+              _currentStageIndex = nextStageIndex;
+              _storyController = PassagewayStoryController(
+                stage: PassagewayStoryCatalog.resolve(
+                  stageNumber: _currentStageNumber,
+                  stageName: _currentStageName,
+                  stageIndex: _currentStageIndex,
+                ),
+              );
+            });
+          }
+        });
+      } else {
+        Future.delayed(const Duration(milliseconds: 800), () {
+          if (mounted) {
+            setState(() {
+              _storyController.revealSuccess();
+            });
+            _startAutoProceedTimer();
+          }
+        });
+      }
     }
   }
 
@@ -88,36 +197,56 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                 sceneWidth * PassagewayStoryView.sourceAspectRatio;
             final scale = sceneWidth / PassagewayStoryView.sourceWidth;
 
-            return SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Center(
-                child: SizedBox(
-                  width: sceneWidth,
-                  height: sceneHeight,
-                  child: Stack(
-                    children: [
-                      // 1. Backdrop (Color calibrated to match Kivo's image background)
-                      const Positioned.fill(child: _Backdrop()),
-
-                      // 2. Top Navigation Bar
-                      _buildTopBar(scale),
-
-                      // 3. Dialogue Panel
-                      _buildDialoguePanel(scale),
-
-                      // 4. Mascot & Pedestal (Adjusted position to fit compact layout)
-                      _buildMascotSection(scale),
-
-                      // 5. Answer Choices (Naturally pushed up by shorter source height)
-                      _buildAnswerChoices(scale),
-
-                      // 6. Success Overlay Dialog
-                      if (_storyController.state.showSuccess)
-                        _buildSuccessOverlay(scale),
-                    ],
+            return Stack(
+              children: [
+                const Positioned.fill(child: _Backdrop()),
+                SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: sceneHeight),
+                      child: SizedBox(
+                        width: sceneWidth,
+                        child: Padding(
+                          padding: EdgeInsets.only(bottom: 80 * scale),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              SizedBox(height: 42 * scale),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 36 * scale,
+                                ),
+                                child: _buildTopBar(scale),
+                              ),
+                              SizedBox(height: 44 * scale),
+                              Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 37 * scale,
+                                ),
+                                child: _buildDialoguePanel(scale),
+                              ),
+                              SizedBox(height: 16 * scale),
+                              _buildMascotSection(scale),
+                              Transform.translate(
+                                offset: Offset(0, -110 * scale),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 37 * scale,
+                                  ),
+                                  child: _buildAnswerChoices(scale),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (_storyController.state.showSuccess)
+                  Positioned.fill(child: _buildSuccessOverlay(scale)),
+              ],
             );
           },
         ),
@@ -126,10 +255,8 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
   }
 
   Widget _buildTopBar(double scale) {
-    return Positioned(
-      left: 36 * scale,
-      top: 42 * scale,
-      right: 36 * scale,
+    return SizedBox(
+      height: 44 * scale,
       child: Stack(
         alignment: Alignment.center,
         children: [
@@ -153,20 +280,25 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Dot 1 (Active)
+              // Dot 1
               Container(
                 width: 22 * scale,
                 height: 22 * scale,
                 decoration: BoxDecoration(
-                  color: KivoColors.glowMint,
+                  color: _currentStageIndex >= 0 ? KivoColors.glowMint : null,
                   shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: KivoColors.glowMint.withAlpha(200),
-                      blurRadius: 12 * scale,
-                      spreadRadius: 2 * scale,
-                    ),
-                  ],
+                  border: _currentStageIndex < 0
+                      ? Border.all(color: KivoColors.glowMint.withAlpha(120), width: 2.5 * scale)
+                      : null,
+                  boxShadow: _currentStageIndex == 0
+                      ? [
+                          BoxShadow(
+                            color: KivoColors.glowMint.withAlpha(200),
+                            blurRadius: 12 * scale,
+                            spreadRadius: 2 * scale,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
 
@@ -174,19 +306,28 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
               Container(
                 width: 60 * scale,
                 height: 2.5 * scale,
-                color: KivoColors.glowMint.withAlpha(120),
+                color: KivoColors.glowMint.withAlpha(_currentStageIndex >= 1 ? 180 : 120),
               ),
 
-              // Dot 2 (Locked)
+              // Dot 2
               Container(
                 width: 22 * scale,
                 height: 22 * scale,
                 decoration: BoxDecoration(
+                  color: _currentStageIndex >= 1 ? KivoColors.glowMint : null,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: KivoColors.glowMint.withAlpha(120),
-                    width: 2.5 * scale,
-                  ),
+                  border: _currentStageIndex < 1
+                      ? Border.all(color: KivoColors.glowMint.withAlpha(120), width: 2.5 * scale)
+                      : null,
+                  boxShadow: _currentStageIndex == 1
+                      ? [
+                          BoxShadow(
+                            color: KivoColors.glowMint.withAlpha(200),
+                            blurRadius: 12 * scale,
+                            spreadRadius: 2 * scale,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
 
@@ -194,19 +335,28 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
               Container(
                 width: 60 * scale,
                 height: 2.5 * scale,
-                color: KivoColors.glowMint.withAlpha(60),
+                color: KivoColors.glowMint.withAlpha(_currentStageIndex >= 2 ? 180 : 60),
               ),
 
-              // Dot 3 (Locked)
+              // Dot 3
               Container(
                 width: 22 * scale,
                 height: 22 * scale,
                 decoration: BoxDecoration(
+                  color: _currentStageIndex >= 2 ? KivoColors.glowMint : null,
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: KivoColors.glowMint.withAlpha(60),
-                    width: 2.5 * scale,
-                  ),
+                  border: _currentStageIndex < 2
+                      ? Border.all(color: KivoColors.glowMint.withAlpha(60), width: 2.5 * scale)
+                      : null,
+                  boxShadow: _currentStageIndex == 2
+                      ? [
+                          BoxShadow(
+                            color: KivoColors.glowMint.withAlpha(200),
+                            blurRadius: 12 * scale,
+                            spreadRadius: 2 * scale,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             ],
@@ -217,25 +367,23 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
   }
 
   Widget _buildDialoguePanel(double scale) {
-    return Positioned(
-      left: 37 * scale,
-      top: 130 * scale,
-      width: 778 * scale,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.topCenter,
-        children: [
-          // Outer border container
-          Container(
+    return Stack(
+      clipBehavior: Clip.none,
+      alignment: Alignment.topCenter,
+      children: [
+        // Outer border container
+        ConstrainedBox(
+          constraints: BoxConstraints(minHeight: 420 * scale),
+          child: Container(
             decoration: BoxDecoration(
               color: const Color(0xEC03161A),
               borderRadius: BorderRadius.circular(28 * scale),
               border: Border.all(
-                color: KivoColors.glowMint.withAlpha(60),
-                width: 1.2 * scale,
+                color: KivoColors.glowMint.withAlpha(160),
+                width: 1.5 * scale,
               ),
             ),
-            padding: EdgeInsets.all(2.5 * scale),
+            padding: EdgeInsets.zero,
             child: Stack(
               children: [
                 // Inner content container
@@ -246,14 +394,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                     top: 48 * scale,
                     bottom: 32 * scale,
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(26 * scale),
-                    border: Border.all(
-                      color: KivoColors.glowMint.withAlpha(160),
-                      width: 1.5 * scale,
-                    ),
-                  ),
+                  decoration: const BoxDecoration(color: Colors.transparent),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
@@ -292,7 +433,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                             ),
                           ],
                         ),
-                        textScaler: TextScaler.noScaling,
+                        textScaler: _textScaler(context),
                       ),
 
                       SizedBox(height: 20 * scale),
@@ -330,7 +471,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                                     color: KivoColors.cream.withAlpha(160),
                                     fontWeight: FontWeight.w800,
                                   ),
-                                  textScaler: TextScaler.noScaling,
+                                  textScaler: _textScaler(context),
                                 ),
                                 SizedBox(height: 4 * scale),
                                 Text(
@@ -340,7 +481,7 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                                     color: Colors.white,
                                     fontWeight: FontWeight.w800,
                                   ),
-                                  textScaler: TextScaler.noScaling,
+                                  textScaler: _textScaler(context),
                                 ),
                               ],
                             ),
@@ -364,14 +505,17 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
                             size: 32 * scale,
                           ),
                           SizedBox(width: 16 * scale),
-                          Text(
-                            _storyController.stage.prompt,
-                            style: KivoTextStyles.darkAccent.copyWith(
-                              fontSize: 22 * scale,
-                              color: KivoColors.cream,
-                              fontWeight: FontWeight.w900,
+                          Expanded(
+                            child: Text(
+                              _storyController.stage.prompt,
+                              style: KivoTextStyles.darkAccent.copyWith(
+                                fontSize: 22 * scale,
+                                color: KivoColors.cream,
+                                fontWeight: FontWeight.w900,
+                              ),
+                              softWrap: true,
+                              textScaler: _textScaler(context),
                             ),
-                            textScaler: TextScaler.noScaling,
                           ),
                         ],
                       ),
@@ -403,42 +547,42 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
               ],
             ),
           ),
+        ),
 
-          // Top Emblem Badge Swirl
-          Positioned(
-            top: -13 * scale,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Wing lines
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 32 * scale,
-                      height: 1.5 * scale,
-                      color: KivoColors.glowMint.withAlpha(120),
-                    ),
-                    SizedBox(width: 64 * scale),
-                    Container(
-                      width: 32 * scale,
-                      height: 1.5 * scale,
-                      color: KivoColors.glowMint.withAlpha(120),
-                    ),
-                  ],
-                ),
+        // Top Emblem Badge Swirl
+        Positioned(
+          top: -13 * scale,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Wing lines
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 32 * scale,
+                    height: 1.5 * scale,
+                    color: KivoColors.glowMint.withAlpha(120),
+                  ),
+                  SizedBox(width: 64 * scale),
+                  Container(
+                    width: 32 * scale,
+                    height: 1.5 * scale,
+                    color: KivoColors.glowMint.withAlpha(120),
+                  ),
+                ],
+              ),
 
-                // Inner Swirl Icon
-                Icon(
-                  PhosphorIcons.spinnerGap(PhosphorIconsStyle.bold),
-                  color: KivoColors.glowMint,
-                  size: 26 * scale,
-                ),
-              ],
-            ),
+              // Inner Swirl Icon
+              Icon(
+                PhosphorIcons.spinnerGap(PhosphorIconsStyle.bold),
+                color: KivoColors.glowMint,
+                size: 26 * scale,
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -450,81 +594,76 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
         ? KivoImagePaths.kivoAnswerCorrect
         : KivoImagePaths.kivoAnswerWrong;
 
-    return Positioned(
-      left: 0,
-      right: 0,
-      top: 475 * scale,
-      child: Center(
-        child: SizedBox(
-          width: 720 * scale,
-          height: 640 * scale,
-          child: Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              // 1. Glowing background aura behind Mascot
-              Positioned(
-                top: 70 * scale,
-                child: Container(
-                  width: 470 * scale,
-                  height: 470 * scale,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        KivoColors.glowMint.withAlpha(80),
-                        KivoColors.kivoTeal.withAlpha(30),
-                        Colors.transparent,
-                      ],
-                      stops: const [0.0, 0.45, 1.0],
-                    ),
+    return Center(
+      child: SizedBox(
+        width: 720 * scale,
+        height: 640 * scale,
+        child: Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // 1. Glowing background aura behind Mascot
+            Positioned(
+              top: 70 * scale,
+              child: Container(
+                width: 470 * scale,
+                height: 470 * scale,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      KivoColors.glowMint.withAlpha(80),
+                      KivoColors.kivoTeal.withAlpha(30),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.45, 1.0],
                   ),
                 ),
               ),
+            ),
 
-              // 2. Magical Rune Base Pedestal (Drawn on floor)
-              Positioned(
-                bottom: 0,
-                child: AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (context, child) {
-                    return CustomPaint(
-                      size: Size(560 * scale, 140 * scale),
-                      painter: _MagicRunePainter(
-                        scale: scale,
-                        pulse: _pulseController.value,
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              // 3. Mascot Kivo Image
-              Positioned(
-                top: 20 * scale,
-                child: ClipRect(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    heightFactor: 0.84,
-                    child: Image.asset(
-                      mascotImagePath,
-                      width: 720 * scale,
-                      height: 720 * scale,
-                      fit: BoxFit.contain,
-                      filterQuality: FilterQuality.high,
+            // 2. Magical Rune Base Pedestal (Drawn on floor)
+            Positioned(
+              bottom: 0,
+              child: AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return CustomPaint(
+                    size: Size(560 * scale, 140 * scale),
+                    painter: _MagicRunePainter(
+                      scale: scale,
+                      pulse: _pulseController.value,
                     ),
+                  );
+                },
+              ),
+            ),
+
+            // 3. Mascot Kivo Image
+            Positioned(
+              top: 20 * scale,
+              child: ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: 0.84,
+                  child: Image.asset(
+                    mascotImagePath,
+                    width: 720 * scale,
+                    height: 720 * scale,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
                   ),
                 ),
               ),
+            ),
 
-              // 4. Sparkle Dots
-              _SparkDot(left: 70, top: 70, size: 6, scale: scale),
-              _SparkDot(left: 590, top: 150, size: 5, scale: scale),
-              _SparkDot(left: 35, top: 330, size: 5, scale: scale),
-              _SparkDot(left: 625, top: 390, size: 6, scale: scale),
-              _SparkDot(left: 130, top: 540, size: 4, scale: scale),
-            ],
-          ),
+            // 4. Sparkle Dots
+            _SparkDot(left: 70, top: 70, size: 6, scale: scale),
+            _SparkDot(left: 590, top: 150, size: 5, scale: scale),
+            _SparkDot(left: 35, top: 330, size: 5, scale: scale),
+            _SparkDot(left: 625, top: 390, size: 6, scale: scale),
+            _SparkDot(left: 130, top: 540, size: 4, scale: scale),
+          ],
         ),
       ),
     );
@@ -533,124 +672,184 @@ class _PassagewayStoryViewState extends State<PassagewayStoryView>
   Widget _buildAnswerChoices(double scale) {
     final choices = _storyController.stage.choices;
 
-    return Positioned(
-      left: 37 * scale,
-      bottom: 80 * scale,
-      width: 778 * scale,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: List.generate(choices.length, (index) {
-          final choice = choices[index];
-          final state = _storyController.state;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(choices.length, (index) {
+        final choice = choices[index];
+        final state = _storyController.state;
 
-          return _AnswerChoiceCard(
-            label: choice.label,
-            text: choice.text,
-            isCorrect: choice.isCorrect,
-            isSelected: state.selectedChoiceId == choice.id,
-            hasAnswered: state.hasAnswered,
-            scaleFactor: scale,
-            onTap: () => _onOptionSelected(choice),
-          );
-        }),
-      ),
+        return _AnswerChoiceCard(
+          label: choice.label,
+          text: choice.text,
+          isCorrect: choice.isCorrect,
+          isSelected: state.selectedChoiceId == choice.id,
+          hasAnswered: state.hasAnswered,
+          scaleFactor: scale,
+          onTap: () => _onOptionSelected(choice),
+        );
+      }),
     );
   }
 
   Widget _buildSuccessOverlay(double scale) {
-    return Positioned.fill(
+    return Container(
+      color: Colors.black.withAlpha(209),
+      alignment: Alignment.center,
       child: Container(
-        color: Colors.black.withAlpha(209),
-        alignment: Alignment.center,
-        child: Container(
-          width: 680 * scale,
-          padding: EdgeInsets.all(42 * scale),
-          decoration: BoxDecoration(
-            color: const Color(0xFF041B1F),
-            borderRadius: BorderRadius.circular(32 * scale),
-            border: Border.all(color: KivoColors.glowMint, width: 1.8 * scale),
-            boxShadow: [
-              BoxShadow(
-                color: KivoColors.glowMint.withAlpha(80),
-                blurRadius: 40 * scale,
+        width: 680 * scale,
+        padding: EdgeInsets.all(42 * scale),
+        decoration: BoxDecoration(
+          color: const Color(0xFF041B1F),
+          borderRadius: BorderRadius.circular(32 * scale),
+          border: Border.all(color: KivoColors.glowMint, width: 1.8 * scale),
+          boxShadow: [
+            BoxShadow(
+              color: KivoColors.glowMint.withAlpha(80),
+              blurRadius: 40 * scale,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Trophy / Achievement Icon
+            Container(
+              width: 130 * scale,
+              height: 130 * scale,
+              decoration: const BoxDecoration(
+                color: Color(0x1A2CE7D2),
+                shape: BoxShape.circle,
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Trophy / Achievement Icon
-              Container(
-                width: 130 * scale,
-                height: 130 * scale,
-                decoration: const BoxDecoration(
-                  color: Color(0x1A2CE7D2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  PhosphorIcons.sparkle(PhosphorIconsStyle.fill),
-                  color: KivoColors.glowMint,
-                  size: 72 * scale,
-                ),
+              child: Icon(
+                PhosphorIcons.sparkle(PhosphorIconsStyle.fill),
+                color: KivoColors.glowMint,
+                size: 72 * scale,
               ),
-              SizedBox(height: 28 * scale),
+            ),
+            SizedBox(height: 28 * scale),
 
-              // Title
-              Text(
-                _storyController.stage.successTitle,
-                textAlign: TextAlign.center,
-                style: KivoTextStyles.darkAccent.copyWith(
-                  fontSize: 34 * scale,
-                  fontWeight: FontWeight.w900,
-                ),
-                textScaler: TextScaler.noScaling,
+            // Title
+            Text(
+              _storyController.stage.successTitle,
+              textAlign: TextAlign.center,
+              style: KivoTextStyles.darkAccent.copyWith(
+                fontSize: 34 * scale,
+                fontWeight: FontWeight.w900,
               ),
-              SizedBox(height: 18 * scale),
+              textScaler: _textScaler(context),
+            ),
+            SizedBox(height: 18 * scale),
 
-              // Description
-              Text(
-                _storyController.stage.successDescription,
-                textAlign: TextAlign.center,
-                style: KivoTextStyles.darkBody.copyWith(
-                  fontSize: 20 * scale,
-                  color: KivoColors.cream.withAlpha(200),
-                  fontWeight: FontWeight.w600,
-                ),
-                textScaler: TextScaler.noScaling,
+            // Description
+            Text(
+              _storyController.stage.successDescription,
+              textAlign: TextAlign.center,
+              style: KivoTextStyles.darkBody.copyWith(
+                fontSize: 20 * scale,
+                color: KivoColors.cream.withAlpha(200),
+                fontWeight: FontWeight.w600,
               ),
-              SizedBox(height: 36 * scale),
+              textScaler: _textScaler(context),
+            ),
+            SizedBox(height: 36 * scale),
 
-              // Back to Map button
-              SizedBox(
-                width: double.infinity,
-                height: 90 * scale,
-                child: FilledButton(
-                  onPressed: () {
-                    Get.back(); // Close screen
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: KivoColors.glowMint,
-                    foregroundColor: const Color(0xFF001E24),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(22 * scale),
+            // Action Buttons
+            Builder(
+              builder: (context) {
+                final stageNames = PassagewayCaveListView.stageNames;
+                final hasNextCombo = _currentStageNumber < stageNames.length;
+
+                if (hasNextCombo) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Proceed to next combo button (with countdown)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 90 * scale,
+                        child: FilledButton(
+                          onPressed: _proceedToNextCombo,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: KivoColors.glowMint,
+                            foregroundColor: const Color(0xFF001E24),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22 * scale),
+                            ),
+                            textStyle: TextStyle(
+                              fontFamily: KivoTextStyles.fontFamily,
+                              fontSize: 28 * scale,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          child: Text(
+                            'Tiếp tục màn kế (${_secondsRemaining}s)',
+                            textScaler: _textScaler(context),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 18 * scale),
+                      // Back to Map button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 90 * scale,
+                        child: OutlinedButton(
+                          onPressed: _saveProgressAndGoBack,
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: KivoColors.glowMint.withAlpha(120), width: 1.8 * scale),
+                            foregroundColor: KivoColors.glowMint,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(22 * scale),
+                            ),
+                            textStyle: TextStyle(
+                              fontFamily: KivoTextStyles.fontFamily,
+                              fontSize: 28 * scale,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          child: Text(
+                            'Quay lại Bản đồ',
+                            textScaler: _textScaler(context),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // No more combos, just back to map
+                  return SizedBox(
+                    width: double.infinity,
+                    height: 90 * scale,
+                    child: FilledButton(
+                      onPressed: _saveProgressAndGoBack,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: KivoColors.glowMint,
+                        foregroundColor: const Color(0xFF001E24),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22 * scale),
+                        ),
+                        textStyle: TextStyle(
+                          fontFamily: KivoTextStyles.fontFamily,
+                          fontSize: 28 * scale,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      child: Text(
+                        'Quay lại Bản đồ',
+                        textScaler: _textScaler(context),
+                      ),
                     ),
-                    textStyle: TextStyle(
-                      fontFamily: KivoTextStyles.fontFamily,
-                      fontSize: 28 * scale,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  child: Text(
-                    _storyController.stage.completionLabel,
-                    textScaler: TextScaler.noScaling,
-                  ),
-                ),
-              ),
-            ],
-          ),
+                  );
+                }
+              },
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  TextScaler _textScaler(BuildContext context) {
+    return MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.2);
   }
 }
 
@@ -686,6 +885,9 @@ class _AnswerChoiceCardState extends State<_AnswerChoiceCard> {
     final isCorrect = widget.isCorrect;
     final isSelected = widget.isSelected;
     final hasAnswered = widget.hasAnswered;
+    final textScaler = MediaQuery.textScalerOf(
+      context,
+    ).clamp(maxScaleFactor: 1.2);
 
     Color cardColor = KivoColors.cream;
     Color borderColor = const Color(0xFFC4B287);
@@ -746,73 +948,78 @@ class _AnswerChoiceCardState extends State<_AnswerChoiceCard> {
               ),
             ],
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 24 * scale,
-              vertical: 20 * scale,
-            ),
-            child: Row(
-              children: [
-                // Medallion with 4 spikes (Compass style)
-                SizedBox(
-                  width: 64 * scale,
-                  height: 64 * scale,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Spikes (Rotated square)
-                      Transform.rotate(
-                        angle: math.pi / 4,
-                        child: Container(
-                          width: 44 * scale,
-                          height: 44 * scale,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: 104 * scale),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: 24 * scale,
+                vertical: 20 * scale,
+              ),
+              child: Row(
+                children: [
+                  // Medallion with 4 spikes (Compass style)
+                  SizedBox(
+                    width: 64 * scale,
+                    height: 64 * scale,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Spikes (Rotated square)
+                        Transform.rotate(
+                          angle: math.pi / 4,
+                          child: Container(
+                            width: 44 * scale,
+                            height: 44 * scale,
+                            decoration: BoxDecoration(
+                              color: medallionBorder,
+                              borderRadius: BorderRadius.circular(4 * scale),
+                            ),
+                          ),
+                        ),
+                        // Inner circle
+                        Container(
+                          width: 52 * scale,
+                          height: 52 * scale,
                           decoration: BoxDecoration(
-                            color: medallionBorder,
-                            borderRadius: BorderRadius.circular(4 * scale),
+                            color: medallionBg,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: medallionBorder.withAlpha(150),
+                              width: 1.5 * scale,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            widget.label,
+                            style: TextStyle(
+                              fontFamily: KivoTextStyles.fontFamily,
+                              fontSize: 24 * scale,
+                              color: letterColor,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
-                      ),
-                      // Inner circle
-                      Container(
-                        width: 52 * scale,
-                        height: 52 * scale,
-                        decoration: BoxDecoration(
-                          color: medallionBg,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: medallionBorder.withAlpha(150),
-                            width: 1.5 * scale,
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          widget.label,
-                          style: TextStyle(
-                            fontFamily: KivoTextStyles.fontFamily,
-                            fontSize: 24 * scale,
-                            color: letterColor,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 24 * scale),
-
-                // Text content
-                Expanded(
-                  child: Text(
-                    widget.text,
-                    style: TextStyle(
-                      fontFamily: KivoTextStyles.fontFamily,
-                      fontSize: 22 * scale,
-                      color: textColor,
-                      fontWeight: FontWeight.w800,
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: 24 * scale),
+
+                  // Text content
+                  Expanded(
+                    child: Text(
+                      widget.text,
+                      softWrap: true,
+                      textScaler: textScaler,
+                      style: TextStyle(
+                        fontFamily: KivoTextStyles.fontFamily,
+                        fontSize: 22 * scale,
+                        color: textColor,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

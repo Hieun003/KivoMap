@@ -1,50 +1,120 @@
+import '../../../data/kivo_seed_data.dart';
 import '../model/passageway_story_stage.dart';
 
 abstract final class PassagewayStoryCatalog {
+  static String _normalize(String str) {
+    return str
+        .replaceAll(RegExp(r'[àáạảãâầấậẩẫăằắặẳẵ]'), 'a')
+        .replaceAll(RegExp(r'[ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ]'), 'a')
+        .replaceAll(RegExp(r'[èéẹẻẽêềếệểễ]'), 'e')
+        .replaceAll(RegExp(r'[ÈÉẸẺẼÊỀẾỆỂỄ]'), 'e')
+        .replaceAll(RegExp(r'[ìíịỉĩ]'), 'i')
+        .replaceAll(RegExp(r'[ÌÍỊỈĨ]'), 'i')
+        .replaceAll(RegExp(r'[òóọỏõôồốộổỗơờớợởỡ]'), 'o')
+        .replaceAll(RegExp(r'[ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ]'), 'o')
+        .replaceAll(RegExp(r'[ùúụủũưừứựửữ]'), 'u')
+        .replaceAll(RegExp(r'[ÙÚỤỦŨƯỪỨỰỬỮ]'), 'u')
+        .replaceAll(RegExp(r'[ỳýỵỷỹ]'), 'y')
+        .replaceAll(RegExp(r'[ỲÝỴỶỸ]'), 'y')
+        .replaceAll(RegExp(r'[đ]'), 'd')
+        .replaceAll(RegExp(r'[Đ]'), 'd')
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]'), '');
+  }
+
+  static String? _findComboId(int stageNumber, String stageName) {
+    final normName = _normalize(stageName);
+    for (final combo in seedPassagewayCombos) {
+      final comboId = combo['id']?.toString() ?? '';
+      final title = combo['title']?.toString() ?? '';
+      if (_normalize(title).contains(normName) || _normalize(comboId).contains(normName)) {
+        return comboId;
+      }
+    }
+    // Fallback if no direct match by name
+    if (stageNumber == 1) {
+      return 'combo_quan_nuoc_dang';
+    } else {
+      return 'combo_ben_chim_sat';
+    }
+  }
+
+  static bool hasStage({
+    required int stageNumber,
+    required String stageName,
+    required int stageIndex,
+  }) {
+    final comboId = _findComboId(stageNumber, stageName);
+    if (comboId == null) return false;
+    for (final stage in seedPassagewayStages) {
+      if (stage['comboId'] == comboId && stage['stageIndex'] == stageIndex) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   static PassagewayStoryStage resolve({
     required int stageNumber,
     required String stageName,
+    int stageIndex = 0,
   }) {
+    final matchedComboId = _findComboId(stageNumber, stageName);
+
+    // Find the stage with target stageIndex for this combo
+    Map<String, Object?>? matchedStage;
+    for (final stage in seedPassagewayStages) {
+      if (stage['comboId'] == matchedComboId && stage['stageIndex'] == stageIndex) {
+        matchedStage = stage;
+        break;
+      }
+    }
+
+    // Fallback to any stage in the combo if specified index not found
+    if (matchedStage == null) {
+      for (final stage in seedPassagewayStages) {
+        if (stage['comboId'] == matchedComboId) {
+          matchedStage = stage;
+          break;
+        }
+      }
+    }
+
+    // Fallback to first stage in seed data
+    matchedStage ??= seedPassagewayStages.first;
+
+    final correctIndex = matchedStage['correctIndex'] as int? ?? 0;
+    final choicesList = matchedStage['choices'] as List? ?? [];
+    final List<PassagewayChoice> parsedChoices = [];
+
+    for (int i = 0; i < choicesList.length; i++) {
+      final choiceMap = choicesList[i];
+      if (choiceMap is Map) {
+        parsedChoices.add(
+          PassagewayChoice(
+            id: choiceMap['id']?.toString() ?? '',
+            label: choiceMap['label']?.toString() ?? '',
+            text: choiceMap['text']?.toString() ?? '',
+            isCorrect: i == correctIndex,
+          ),
+        );
+      }
+    }
+
     return PassagewayStoryStage(
       number: stageNumber,
       name: stageName,
-      guideName: 'Kivo',
-      introLead:
-          '\u2018H\u00e3y nh\u1eafm m\u1eaft l\u1ea1i... Ta s\u1ebd \u0111\u01b0a ng\u01b0\u01a1i v\u00e0o ',
-      introHighlight: '\u1ea2o c\u1ea3nh B\u1ebfn Chim S\u1eaft',
-      introTail: '!\u2018',
-      guardName: 'T\u00ean l\u00ednh canh g\u1eaft l\u1edbn:',
-      guardDialogue:
-          '\u2018Hey! You cannot bring this bottle through security!\u2019',
-      prompt:
-          'Ng\u01b0\u01a1i ch\u1ecdn kh\u1ea9u ch\u00fa n\u00e0o \u0111\u1ec3 \u0111\u00e1p l\u1ea1i?',
-      choices: const [
-        PassagewayChoice(
-          id: 'discard-bottle',
-          label: 'A.',
-          text: 'Oh, sorry! I will throw it away right now.',
-          isCorrect: true,
-        ),
-        PassagewayChoice(
-          id: 'question-rule',
-          label: 'B.',
-          text:
-              'Really? It\u2019s just a water bottle. What\u2019s the problem?',
-          isCorrect: false,
-        ),
-        PassagewayChoice(
-          id: 'request-exception',
-          label: 'C.',
-          text: 'I understand the rule, but could you make an exception?',
-          isCorrect: false,
-        ),
-      ],
-      successTitle: 'Kh\u1ea9u ch\u00fa ch\u00ednh x\u00e1c!',
-      successDescription:
-          'B\u1ea1n \u0111\u00e3 \u0111\u00e1p l\u1ea1i t\u00ean l\u00ednh canh an ninh m\u1ed9t c\u00e1ch '
-          'l\u1ecbch s\u1ef1 \u0111\u1ec3 gi\u1ea3i quy\u1ebft t\u00ecnh hu\u1ed1ng v\u00e0 b\u1eaft \u0111\u1ea7u b\u01b0\u1edbc '
-          'qua B\u1ebfn Chim S\u1eaft th\u00e0nh c\u00f4ng.',
-      completionLabel: 'Quay l\u1ea1i B\u1ea3n \u0111\u1ed3',
+      guideName: matchedStage['guideName']?.toString() ?? 'Kivo',
+      introLead: matchedStage['introLead']?.toString() ?? '',
+      introHighlight: matchedStage['introHighlight']?.toString() ?? '',
+      introTail: matchedStage['introTail']?.toString() ?? '',
+      guardName: matchedStage['guardName']?.toString() ?? '',
+      guardDialogue: matchedStage['guardDialogue']?.toString() ?? '',
+      prompt: matchedStage['prompt']?.toString() ?? '',
+      choices: parsedChoices,
+      successTitle: matchedStage['successTitle']?.toString() ?? '',
+      successDescription: matchedStage['successDescription']?.toString() ?? '',
+      completionLabel: matchedStage['completionLabel']?.toString() ?? 'Tiếp tục',
     );
   }
 }

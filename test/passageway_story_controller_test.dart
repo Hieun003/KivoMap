@@ -49,6 +49,40 @@ void main() {
     expect(controller.state.showSuccess, isTrue);
   });
 
+  test(
+    'catalog resolves every seeded Passageway stage with usable text and choices',
+    () {
+      final routes = <String, int>{'Quan Nuoc Dang': 1, 'Ben Chim Sat': 2};
+
+      for (final route in routes.entries) {
+        var stageIndex = 0;
+        while (PassagewayStoryCatalog.hasStage(
+          stageNumber: route.value,
+          stageName: route.key,
+          stageIndex: stageIndex,
+        )) {
+          final resolvedStage = PassagewayStoryCatalog.resolve(
+            stageNumber: route.value,
+            stageName: route.key,
+            stageIndex: stageIndex,
+          );
+
+          expect(resolvedStage.introLead, isNotEmpty);
+          expect(resolvedStage.guardName, isNotEmpty);
+          expect(resolvedStage.guardDialogue, isNotEmpty);
+          expect(resolvedStage.prompt, isNotEmpty);
+          expect(resolvedStage.choices, isNotEmpty);
+          expect(
+            resolvedStage.choices.where((choice) => choice.isCorrect),
+            hasLength(1),
+          );
+          stageIndex++;
+        }
+        expect(stageIndex, greaterThan(0));
+      }
+    },
+  );
+
   test('unknown choice id is rejected', () {
     final controller = PassagewayStoryController(stage: stage);
 
