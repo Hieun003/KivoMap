@@ -10,11 +10,13 @@ import 'app/bindings/home_binding.dart';
 import 'app/bindings/review_binding.dart';
 import 'app/bindings/discovery_binding.dart';
 import 'app/bindings/vocabulary_planet_binding.dart';
+import 'app/bindings/vocabulary_profile_binding.dart';
 import 'app/navigation/main_navigation_shell.dart';
 import 'app/responsive/kivo_scale.dart';
 import 'app/routes/app_routes.dart';
 import 'app/theme/kivo_theme.dart';
 import 'features/cluster_learning/view/vocabulary_planet_view.dart';
+import 'features/vocabulary_profile/view/vocabulary_profile_view.dart';
 import 'features/discovery/view/discovery_matrix_view.dart';
 import 'features/review/view/review_view.dart';
 import 'features/passageway/view/passageway_cave_list_view.dart';
@@ -87,6 +89,11 @@ class MyApp extends StatelessWidget {
               name: AppRoutes.vocabularyPlanet,
               page: () => const VocabularyPlanetView(),
               binding: VocabularyPlanetBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.vocabularyProfile,
+              page: () => const VocabularyProfileView(),
+              binding: VocabularyProfileBinding(),
             ),
             GetPage(
               name: AppRoutes.discoveryMatrix,
