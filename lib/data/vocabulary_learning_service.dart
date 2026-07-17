@@ -7,11 +7,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class VocabularyLearningService {
   static const String _repetitionStatesKey = 'kivo.repetition_states.v1';
   static const String _discoveryTracesKey = 'kivo.discovery_traces.v1';
+  static const String _discoveryActivitiesKey = 'kivo.discovery_activities.v1';
 
   final RxInt srsUpdateTrigger = 0.obs;
 
   final Map<String, RepetitionLearningState> _repetitionStates = {};
   final Map<String, Set<String>> _discoveredContextIdsByVocabulary = {};
+  final Map<String, DiscoveryActivity> _discoveryActivities = {};
   bool _isInitialized = false;
 
   Future<void> initialize() async {
@@ -22,6 +24,7 @@ class VocabularyLearningService {
     final preferences = await SharedPreferences.getInstance();
     _loadRepetitionStates(preferences.getString(_repetitionStatesKey));
     _loadDiscoveryTraces(preferences.getString(_discoveryTracesKey));
+    _loadDiscoveryActivities(preferences.getString(_discoveryActivitiesKey));
     _isInitialized = true;
   }
 
@@ -37,6 +40,13 @@ class VocabularyLearningService {
     final wasAdded = contexts.add(knowledgeLinkId);
     if (wasAdded) {
       await _saveDiscoveryTraces();
+      final activity = DiscoveryActivity(
+        vocabularyId: vocabularyId,
+        knowledgeLinkId: knowledgeLinkId,
+        discoveredAt: DateTime.now(),
+      );
+      _discoveryActivities[activity.key] = activity;
+      await _saveDiscoveryActivities();
       srsUpdateTrigger.value++;
     }
   }
@@ -201,6 +211,24 @@ class VocabularyLearningService {
     );
   }
 
+  Future<List<DiscoveryActivity>> recentDiscoveryActivities({
+    int limit = 20,
+  }) async {
+    await initialize();
+    final activities = _discoveryActivities.values.toList(growable: false)
+      ..sort((a, b) => b.discoveredAt.compareTo(a.discoveredAt));
+    return activities.take(limit).toList(growable: false);
+  }
+
+  Future<void> _saveDiscoveryActivities() async {
+    final preferences = await SharedPreferences.getInstance();
+    final payload = {
+      for (final entry in _discoveryActivities.entries)
+        entry.key: entry.value.toJson(),
+    };
+    await preferences.setString(_discoveryActivitiesKey, jsonEncode(payload));
+  }
+
   Future<void> _saveRepetitionStates() async {
     final preferences = await SharedPreferences.getInstance();
     final payload = {
@@ -263,6 +291,47 @@ class VocabularyLearningService {
         }),
       );
   }
+
+  void _loadDiscoveryActivities(String? raw) {
+    if (raw == null || raw.isEmpty) return;
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) return;
+    _discoveryActivities
+      ..clear()
+      ..addEntries(
+        decoded.entries.map((entry) {
+          final activity = DiscoveryActivity.fromJson(entry.value);
+          return MapEntry(entry.key.toString(), activity);
+        }),
+      );
+  }
+}
+
+class DiscoveryActivity {
+  const DiscoveryActivity({
+    required this.vocabularyId,
+    required this.knowledgeLinkId,
+    required this.discoveredAt,
+  });
+  factory DiscoveryActivity.fromJson(Object? source) {
+    final json = source is Map ? source : const <String, Object?>{};
+    return DiscoveryActivity(
+      vocabularyId: json['vocabularyId']?.toString() ?? '',
+      knowledgeLinkId: json['knowledgeLinkId']?.toString() ?? '',
+      discoveredAt:
+          DateTime.tryParse(json['discoveredAt']?.toString() ?? '') ??
+          DateTime.now(),
+    );
+  }
+  final String vocabularyId;
+  final String knowledgeLinkId;
+  final DateTime discoveredAt;
+  String get key => '$vocabularyId::$knowledgeLinkId';
+  Map<String, Object?> toJson() => {
+    'vocabularyId': vocabularyId,
+    'knowledgeLinkId': knowledgeLinkId,
+    'discoveredAt': discoveredAt.toIso8601String(),
+  };
 }
 
 class RepetitionLearningState {
