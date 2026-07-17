@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../features/home/view/home_view.dart';
+import '../../features/treasure/view/treasure_view.dart';
+import '../bindings/treasure_binding.dart';
 import '../assets/image_paths.dart';
 import '../icons/kivo_icon_registry.dart';
 import '../routes/app_routes.dart';
@@ -42,18 +44,19 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    TreasureBinding().dependencies();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
         children: const [
           HomeView(),
-          _NavigationTabPlaceholder(
-            title: 'Kho báu',
-            subtitle: 'Phần thưởng và vật phẩm học tập sẽ nằm ở đây.',
-            mascotPath: KivoImagePaths.giftBox,
-            iconKey: 'treasure',
-          ),
+          TreasureView(),
           _NavigationTabPlaceholder(
             title: 'Hồ sơ',
             subtitle: 'Thông tin năng lượng, streak và tiến độ cá nhân.',
@@ -93,7 +96,6 @@ class _NavigationTabPlaceholder extends StatelessWidget {
   final String subtitle;
   final String mascotPath;
   final String iconKey;
-
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(

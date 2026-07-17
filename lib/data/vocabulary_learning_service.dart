@@ -37,6 +37,7 @@ class VocabularyLearningService {
     final wasAdded = contexts.add(knowledgeLinkId);
     if (wasAdded) {
       await _saveDiscoveryTraces();
+      srsUpdateTrigger.value++;
     }
   }
 
@@ -78,6 +79,15 @@ class VocabularyLearningService {
     return states;
   }
 
+  /// Every vocabulary that has entered the user's local SRS history.
+  /// Treasure uses this as its inclusion rule.
+  Future<List<RepetitionLearningState>> learnedVocabularyStates() async {
+    await initialize();
+    final states = _repetitionStates.values.toList(growable: false)
+      ..sort((a, b) => b.learnedAt.compareTo(a.learnedAt));
+    return List<RepetitionLearningState>.unmodifiable(states);
+  }
+
   Future<List<RepetitionLearningState>> dueRepetitionStates({
     int limit = 20,
   }) async {
@@ -96,10 +106,11 @@ class VocabularyLearningService {
 
   Future<DateTime?> getNextReviewTime() async {
     await initialize();
-    final futureStates = _repetitionStates.values
-        .where((state) => state.nextReviewAt.isAfter(DateTime.now()))
-        .toList(growable: false)
-      ..sort((a, b) => a.nextReviewAt.compareTo(b.nextReviewAt));
+    final futureStates =
+        _repetitionStates.values
+            .where((state) => state.nextReviewAt.isAfter(DateTime.now()))
+            .toList(growable: false)
+          ..sort((a, b) => a.nextReviewAt.compareTo(b.nextReviewAt));
     return futureStates.firstOrNull?.nextReviewAt;
   }
 
@@ -153,8 +164,10 @@ class VocabularyLearningService {
         nextMastery = max(1, current.masteryLevel - 1);
       }
     }
-    
-    final nextInterval = nextMastery == 0 ? 0 : _getIntervalForLevel(nextMastery);
+
+    final nextInterval = nextMastery == 0
+        ? 0
+        : _getIntervalForLevel(nextMastery);
     final nextEase = allCorrect
         ? min(3.0, current.easinessFactor + 0.1)
         : max(1.3, current.easinessFactor - 0.2);
