@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import 'app/bindings/home_binding.dart';
 import 'app/bindings/review_binding.dart';
+import 'app/bindings/settings_binding.dart';
 import 'app/bindings/discovery_binding.dart';
 import 'app/bindings/vocabulary_planet_binding.dart';
 import 'app/bindings/vocabulary_profile_binding.dart';
@@ -21,6 +22,8 @@ import 'features/discovery/view/discovery_matrix_view.dart';
 import 'features/review/view/review_view.dart';
 import 'features/passageway/view/passageway_cave_list_view.dart';
 import 'features/secret_passage/view/secret_passage_intro_view.dart';
+import 'features/settings/view/settings_view.dart';
+import 'features/settings/view/personal_profile_view.dart';
 
 import 'data/database_engine_service.dart';
 
@@ -84,6 +87,26 @@ class MyApp extends StatelessWidget {
               name: AppRoutes.home,
               page: () => const MainNavigationShell(),
               binding: HomeBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.treasure,
+              page: () => const MainNavigationShell(initialIndex: 1),
+              binding: HomeBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.profile,
+              page: () => const MainNavigationShell(initialIndex: 2),
+              binding: HomeBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.settings,
+              page: () => const SettingsView(),
+              binding: SettingsBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.personalProfile,
+              page: () => const PersonalProfileView(),
+              binding: SettingsBinding(),
             ),
             GetPage(
               name: AppRoutes.vocabularyPlanet,

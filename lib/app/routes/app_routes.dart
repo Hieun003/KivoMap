@@ -8,4 +8,6 @@ abstract final class AppRoutes {
   static const String treasure = '/treasure';
   static const String vocabularyProfile = '/vocabulary-profile';
   static const String profile = '/profile';
+  static const String settings = '/settings';
+  static const String personalProfile = '/settings/personal-profile';
 }

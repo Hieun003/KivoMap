@@ -22,11 +22,13 @@ class KivoBottomNav extends StatelessWidget {
     required this.items,
     required this.currentIndex,
     required this.onSelected,
+    this.compact = false,
   });
 
   final List<KivoBottomNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onSelected;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -48,9 +50,9 @@ class KivoBottomNav extends StatelessWidget {
         ),
         padding: EdgeInsets.fromLTRB(
           KivoScale.w(20),
-          KivoScale.h(20),
+          compact ? KivoScale.h(12) : KivoScale.h(20),
           KivoScale.w(20),
-          KivoScale.h(20),
+          compact ? KivoScale.h(12) : KivoScale.h(20),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -61,6 +63,7 @@ class KivoBottomNav extends StatelessWidget {
                   item: items[index],
                   isSelected: index == currentIndex,
                   onTap: () => onSelected(index),
+                  compact: compact,
                 ),
               ),
           ],
@@ -75,27 +78,23 @@ class _KivoBottomNavButton extends StatelessWidget {
     required this.item,
     required this.isSelected,
     required this.onTap,
+    required this.compact,
   });
 
   final KivoBottomNavItem item;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final color =
-    isSelected ? KivoColors.actionCyan : KivoColors.disabledText;
+    final color = isSelected ? KivoColors.actionCyan : KivoColors.disabledText;
 
-    final tone =
-    isSelected ? KivoIconTone.duotone : KivoIconTone.regular;
+    final tone = isSelected ? KivoIconTone.duotone : KivoIconTone.regular;
 
-    final circleSize = isSelected
-        ? KivoScale.w(100)
-        : KivoScale.w(100);
+    final circleSize = compact ? KivoScale.w(74) : KivoScale.w(100);
 
-    final iconSize = isSelected
-        ? KivoScale.w(50)
-        : KivoScale.w(50);
+    final iconSize = compact ? KivoScale.w(34) : KivoScale.w(50);
 
     return Semantics(
       button: true,
@@ -106,12 +105,11 @@ class _KivoBottomNavButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            vertical: KivoScale.h(6),
+            vertical: compact ? KivoScale.h(3) : KivoScale.h(6),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-
               AnimatedContainer(
                 duration: KivoDurations.fast,
                 curve: Curves.easeOutCubic,
@@ -124,24 +122,22 @@ class _KivoBottomNavButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: color,
-                    width: isSelected ? 2.2 : 1.8,
+                    width: compact
+                        ? (isSelected ? 1.8 : 1.3)
+                        : (isSelected ? 2.2 : 1.8),
                   ),
                   boxShadow: isSelected
                       ? [
-                    BoxShadow(
-                      color:
-                      KivoColors.tealShadow.withAlpha(35),
-                      blurRadius: KivoScale.r(14),
-                    ),
-                  ]
+                          BoxShadow(
+                            color: KivoColors.tealShadow.withAlpha(35),
+                            blurRadius: KivoScale.r(14),
+                          ),
+                        ]
                       : null,
                 ),
                 alignment: Alignment.center,
                 child: Icon(
-                  KivoIconRegistry.system(
-                    item.iconKey,
-                    tone: tone,
-                  ),
+                  KivoIconRegistry.system(item.iconKey, tone: tone),
                   color: color,
                   size: iconSize,
                 ),
@@ -155,7 +151,9 @@ class _KivoBottomNavButton extends StatelessWidget {
                 style: KivoTextStyles.caption.copyWith(
                   color: color,
                   fontWeight: FontWeight.w800,
-                  fontSize: KivoScale.sp(12.5, min: 11),
+                  fontSize: compact
+                      ? KivoScale.sp(11.5, min: 10)
+                      : KivoScale.sp(12.5, min: 11),
                 ),
                 child: Text(
                   item.label,
