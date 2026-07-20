@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_session_scope_service.dart';
+
 /// Manages player energy and daily streak.
 ///
 /// Energy rules:
@@ -18,8 +20,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///     review) occurs on a given calendar day.
 ///   - Resets to 0 if more than 1 day passes without any activity.
 class EnergyService {
-  static const String _stateKey = 'kivo.energy_state.v1';
+  static const String _stateKeyBase = 'kivo.energy_state.v1';
   static const int maxEnergy = 50;
+
+  final UserSessionScopeService _sessionScope = UserSessionScopeService();
 
   // ---------------------------------------------------------------------------
   // Observable state (readable by any widget via Obx)
@@ -36,6 +40,7 @@ class EnergyService {
   DateTime _lastUpdatedAt = DateTime.now();
   DateTime? _lastActiveDate;
   bool _isInitialized = false;
+  String? _loadedScopeId;
   Timer? _regenTimer;
 
   // ---------------------------------------------------------------------------
@@ -43,10 +48,20 @@ class EnergyService {
   // ---------------------------------------------------------------------------
 
   Future<void> initialize() async {
-    if (_isInitialized) return;
+    final scopeId = _sessionScope.scopeId;
+    if (_isInitialized && _loadedScopeId == scopeId) return;
+
+    _regenTimer?.cancel();
+    energy.value = maxEnergy;
+    streakDays.value = 0;
+    _savedEnergy = maxEnergy;
+    _lastUpdatedAt = DateTime.now();
+    _lastActiveDate = null;
+
     final prefs = await SharedPreferences.getInstance();
-    _loadState(prefs.getString(_stateKey));
+    _loadState(prefs.getString(_sessionScope.scopedKey(_stateKeyBase)));
     _startRegenTimer();
+    _loadedScopeId = scopeId;
     _isInitialized = true;
   }
 
@@ -119,10 +134,9 @@ class EnergyService {
       streakDays.value = (json['streakDays'] as num?)?.toInt() ?? 0;
 
       final lastActiveDateStr = json['lastActiveDate']?.toString();
-      _lastActiveDate =
-          lastActiveDateStr != null
-              ? DateTime.tryParse(lastActiveDateStr)
-              : null;
+      _lastActiveDate = lastActiveDateStr != null
+          ? DateTime.tryParse(lastActiveDateStr)
+          : null;
 
       // Reset streak if more than 1 day of inactivity
       if (_lastActiveDate != null) {
@@ -152,7 +166,10 @@ class EnergyService {
       'streakDays': streakDays.value,
       'lastActiveDate': _lastActiveDate?.toIso8601String(),
     };
-    await prefs.setString(_stateKey, jsonEncode(payload));
+    await prefs.setString(
+      _sessionScope.scopedKey(_stateKeyBase),
+      jsonEncode(payload),
+    );
   }
 
   DateTime _dateOnly(DateTime dt) => DateTime(dt.year, dt.month, dt.day);
