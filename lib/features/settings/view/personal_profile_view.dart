@@ -37,16 +37,33 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
     final profile = _profileService.profile.value;
     return Scaffold(
       body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: KivoGradients.lightBackground),
+        decoration: const BoxDecoration(
+          gradient: KivoGradients.lightBackground,
+        ),
         child: SafeArea(
           child: ListView(
-            padding: EdgeInsets.fromLTRB(KivoScale.w(24), KivoScale.h(14), KivoScale.w(24), KivoScale.h(32)),
+            padding: EdgeInsets.fromLTRB(
+              KivoScale.w(24),
+              KivoScale.h(14),
+              KivoScale.w(24),
+              KivoScale.h(32),
+            ),
             children: [
-              Row(children: [
-                IconButton(onPressed: Get.back, icon: const Icon(Icons.arrow_back_rounded)),
-                SizedBox(width: KivoScale.w(8)),
-                Text('Thông tin cá nhân', style: KivoTextStyles.screenTitle.copyWith(fontSize: KivoScale.sp(28, min: 22))),
-              ]),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: Get.back,
+                    icon: const Icon(Icons.arrow_back_rounded),
+                  ),
+                  SizedBox(width: KivoScale.w(8)),
+                  Text(
+                    'Thông tin cá nhân',
+                    style: KivoTextStyles.screenTitle.copyWith(
+                      fontSize: KivoScale.sp(28, min: 22),
+                    ),
+                  ),
+                ],
+              ),
               SizedBox(height: KivoScale.h(24)),
               Text('Chọn avatar Kivo', style: KivoTextStyles.cardTitle),
               SizedBox(height: KivoScale.h(12)),
@@ -72,12 +89,17 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
                 decoration: const InputDecoration(hintText: 'Nhập tên của bạn'),
               ),
               SizedBox(height: KivoScale.h(18)),
-              Text('Email', style: KivoTextStyles.cardTitle),
+              Text(
+                profile.email.startsWith('+') ? 'Số điện thoại' : 'Email',
+                style: KivoTextStyles.cardTitle,
+              ),
               SizedBox(height: KivoScale.h(8)),
               TextFormField(
                 initialValue: profile.email,
                 readOnly: true,
-                decoration: const InputDecoration(helperText: 'Tài khoản thử nghiệm chưa thể đổi email.'),
+                decoration: const InputDecoration(
+                  helperText: 'Thông tin đăng nhập được quản lý bởi Firebase.',
+                ),
               ),
               SizedBox(height: KivoScale.h(28)),
               FilledButton(
@@ -102,7 +124,9 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
     } on ArgumentError {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Tên hiển thị cần có từ 1 đến 32 ký tự.')),
+          const SnackBar(
+            content: Text('Tên hiển thị cần có từ 1 đến 32 ký tự.'),
+          ),
         );
       }
     } finally {
@@ -112,7 +136,11 @@ class _PersonalProfileViewState extends State<PersonalProfileView> {
 }
 
 class _AvatarChoice extends StatelessWidget {
-  const _AvatarChoice({required this.option, required this.isSelected, required this.onTap});
+  const _AvatarChoice({
+    required this.option,
+    required this.isSelected,
+    required this.onTap,
+  });
   final ProfileAvatarOption option;
   final bool isSelected;
   final VoidCallback onTap;
@@ -126,13 +154,20 @@ class _AvatarChoice extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(KivoScale.r(999)),
       child: Container(
-        width: KivoScale.w(78), height: KivoScale.w(78), padding: EdgeInsets.all(KivoScale.w(4)),
+        width: KivoScale.w(78),
+        height: KivoScale.w(78),
+        padding: EdgeInsets.all(KivoScale.w(4)),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: isSelected ? KivoColors.kivoTeal : KivoColors.lightBorder, width: isSelected ? 2.5 : 1),
+          border: Border.all(
+            color: isSelected ? KivoColors.kivoTeal : KivoColors.lightBorder,
+            width: isSelected ? 2.5 : 1,
+          ),
           color: isSelected ? KivoColors.softMintCard : Colors.white,
         ),
-        child: ClipOval(child: Image.asset(option.assetPath, fit: BoxFit.contain)),
+        child: ClipOval(
+          child: Image.asset(option.assetPath, fit: BoxFit.contain),
+        ),
       ),
     ),
   );

@@ -12,7 +12,20 @@
           "package_name": "com.example.kivo_map"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "253685227024-n8v1jdunkk2l42uieps2a1kc1dst4hkg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.kivo_map",
+            "certificate_hash": "b158456a64ef14b48f215b9942b681c53ffdaecf"
+          }
+        },
+        {
+          "client_id": "253685227024-pefibu911a8nlau3a7ult9jh5v4mjjga.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBwZx7v7DqHD9m0eoPTI4ybO-buufke2FM"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "253685227024-pefibu911a8nlau3a7ult9jh5v4mjjga.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

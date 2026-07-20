@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/routes/app_routes.dart';
 import '../../../data/kivo_seed_data.dart';
@@ -35,13 +34,6 @@ class HomeViewModel extends GetxController {
     ever(_energyService.streakDays, (_) => _updateEnergyAndStreak());
     ever(_learningService.srsUpdateTrigger, (_) => load());
     load();
-  }
-
-  Future<void> _resetAndLoad() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    Get.log('KIVO: Reset all SharedPreferences data successfully!');
-    await load();
   }
 
   Future<void> load() async {

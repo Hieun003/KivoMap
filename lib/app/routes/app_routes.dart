@@ -1,5 +1,8 @@
 abstract final class AppRoutes {
-  static const String home = '/';
+  static const String root = '/';
+  static const String home = '/home';
+  static const String authPhone = '/auth/phone';
+  static const String authOtp = '/auth/otp';
   static const String vocabularyPlanet = '/vocabulary-planet';
   static const String discoveryMatrix = '/discovery-matrix';
   static const String review = '/review';

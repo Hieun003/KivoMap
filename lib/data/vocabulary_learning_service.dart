@@ -4,28 +4,43 @@ import 'dart:math';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_session_scope_service.dart';
+
 class VocabularyLearningService {
   static const String _repetitionStatesKey = 'kivo.repetition_states.v1';
   static const String _discoveryTracesKey = 'kivo.discovery_traces.v1';
   static const String _discoveryActivitiesKey = 'kivo.discovery_activities.v1';
 
   final RxInt srsUpdateTrigger = 0.obs;
+  final UserSessionScopeService _sessionScope = UserSessionScopeService();
 
   final Map<String, RepetitionLearningState> _repetitionStates = {};
   final Map<String, Set<String>> _discoveredContextIdsByVocabulary = {};
   final Map<String, DiscoveryActivity> _discoveryActivities = {};
   bool _isInitialized = false;
+  String? _loadedScopeId;
 
   Future<void> initialize() async {
-    if (_isInitialized) {
-      return;
-    }
+    final scopeId = _sessionScope.scopeId;
+    if (_isInitialized && _loadedScopeId == scopeId) return;
+
+    _repetitionStates.clear();
+    _discoveredContextIdsByVocabulary.clear();
+    _discoveryActivities.clear();
 
     final preferences = await SharedPreferences.getInstance();
-    _loadRepetitionStates(preferences.getString(_repetitionStatesKey));
-    _loadDiscoveryTraces(preferences.getString(_discoveryTracesKey));
-    _loadDiscoveryActivities(preferences.getString(_discoveryActivitiesKey));
+    _loadRepetitionStates(
+      preferences.getString(_sessionScope.scopedKey(_repetitionStatesKey)),
+    );
+    _loadDiscoveryTraces(
+      preferences.getString(_sessionScope.scopedKey(_discoveryTracesKey)),
+    );
+    _loadDiscoveryActivities(
+      preferences.getString(_sessionScope.scopedKey(_discoveryActivitiesKey)),
+    );
+    _loadedScopeId = scopeId;
     _isInitialized = true;
+    srsUpdateTrigger.value++;
   }
 
   Future<void> recordDiscoveryContext({
@@ -226,7 +241,10 @@ class VocabularyLearningService {
       for (final entry in _discoveryActivities.entries)
         entry.key: entry.value.toJson(),
     };
-    await preferences.setString(_discoveryActivitiesKey, jsonEncode(payload));
+    await preferences.setString(
+      _sessionScope.scopedKey(_discoveryActivitiesKey),
+      jsonEncode(payload),
+    );
   }
 
   Future<void> _saveRepetitionStates() async {
@@ -235,7 +253,10 @@ class VocabularyLearningService {
       for (final entry in _repetitionStates.entries)
         entry.key: entry.value.toJson(),
     };
-    await preferences.setString(_repetitionStatesKey, jsonEncode(payload));
+    await preferences.setString(
+      _sessionScope.scopedKey(_repetitionStatesKey),
+      jsonEncode(payload),
+    );
   }
 
   Future<void> _saveDiscoveryTraces() async {
@@ -244,7 +265,10 @@ class VocabularyLearningService {
       for (final entry in _discoveredContextIdsByVocabulary.entries)
         entry.key: entry.value.toList(growable: false),
     };
-    await preferences.setString(_discoveryTracesKey, jsonEncode(payload));
+    await preferences.setString(
+      _sessionScope.scopedKey(_discoveryTracesKey),
+      jsonEncode(payload),
+    );
   }
 
   void _loadRepetitionStates(String? raw) {

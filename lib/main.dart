@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:firebase_core/firebase_core.dart';
@@ -6,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
+import 'app/bindings/auth_binding.dart';
 import 'app/bindings/home_binding.dart';
 import 'app/bindings/review_binding.dart';
 import 'app/bindings/settings_binding.dart';
@@ -17,6 +17,9 @@ import 'app/responsive/kivo_scale.dart';
 import 'app/routes/app_routes.dart';
 import 'app/theme/kivo_theme.dart';
 import 'features/cluster_learning/view/vocabulary_planet_view.dart';
+import 'features/auth/view/auth_gate.dart';
+import 'features/auth/view/otp_verification_view.dart';
+import 'features/auth/view/phone_auth_view.dart';
 import 'features/vocabulary_profile/view/vocabulary_profile_view.dart';
 import 'features/discovery/view/discovery_matrix_view.dart';
 import 'features/review/view/review_view.dart';
@@ -25,19 +28,14 @@ import 'features/secret_passage/view/secret_passage_intro_view.dart';
 import 'features/settings/view/settings_view.dart';
 import 'features/settings/view/personal_profile_view.dart';
 
-import 'data/database_engine_service.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
-  unawaited(_initializeFirebase());
-}
-
-Future<void> _initializeFirebase() async {
+  Object? startupError;
   try {
     await Firebase.initializeApp();
-    unawaited(_bootstrapFirestore());
+    AuthBinding().dependencies();
   } catch (error, stackTrace) {
+    startupError = error;
     developer.log(
       'Firebase initialization failed.',
       name: 'KivoMap',
@@ -45,30 +43,13 @@ Future<void> _initializeFirebase() async {
       stackTrace: stackTrace,
     );
   }
-}
-
-Future<void> _bootstrapFirestore() async {
-  try {
-    final dbEngine = DatabaseEngineService();
-    await dbEngine.seedStaticKnowledgeBase();
-    await dbEngine.activateUserRuntimeEnvironment(
-      userId: 'test_user_id_123',
-      name: 'KivoMap Developer',
-      email: 'dev.kivomap@gmail.com',
-    );
-    await dbEngine.bootstrapFirestoreSchema(userId: 'test_user_id_123');
-  } catch (error, stackTrace) {
-    developer.log(
-      'Firestore bootstrap failed.',
-      name: 'KivoMap',
-      error: error,
-      stackTrace: stackTrace,
-    );
-  }
+  runApp(MyApp(startupError: startupError));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.startupError});
+
+  final Object? startupError;
 
   @override
   Widget build(BuildContext context) {
@@ -80,13 +61,25 @@ class MyApp extends StatelessWidget {
         return GetMaterialApp(
           title: 'KivoMap Language',
           theme: KivoTheme.light,
-          initialRoute: AppRoutes.home,
+          initialRoute: AppRoutes.root,
           debugShowCheckedModeBanner: false,
           getPages: [
+            GetPage(
+              name: AppRoutes.root,
+              page: () => AuthGate(startupError: startupError),
+            ),
             GetPage(
               name: AppRoutes.home,
               page: () => const MainNavigationShell(),
               binding: HomeBinding(),
+            ),
+            GetPage(
+              name: AppRoutes.authPhone,
+              page: () => const PhoneAuthView(),
+            ),
+            GetPage(
+              name: AppRoutes.authOtp,
+              page: () => const OtpVerificationView(),
             ),
             GetPage(
               name: AppRoutes.treasure,
