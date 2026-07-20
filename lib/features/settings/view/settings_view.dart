@@ -82,9 +82,22 @@ class SettingsView extends GetView<SettingsViewModel> {
                 ),
                 SizedBox(height: KivoScale.h(28)),
                 OutlinedButton.icon(
-                  onPressed: () => _showDemoLogoutNotice(context),
-                  icon: const Icon(Icons.logout_rounded),
-                  label: const Text('Đăng xuất'),
+                  onPressed:
+                      controller.canSignOut && !controller.isSigningOut.value
+                      ? () => _confirmLogout(context)
+                      : null,
+                  icon: controller.isSigningOut.value
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.logout_rounded),
+                  label: Text(
+                    controller.isSigningOut.value
+                        ? 'Đang đăng xuất...'
+                        : 'Đăng xuất',
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: KivoColors.errorCoral,
                     side: const BorderSide(color: KivoColors.errorCoral),
@@ -99,22 +112,28 @@ class SettingsView extends GetView<SettingsViewModel> {
     );
   }
 
-  Future<void> _showDemoLogoutNotice(BuildContext context) {
-    return showDialog<void>(
+  Future<void> _confirmLogout(BuildContext context) async {
+    final shouldSignOut = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Tài khoản thử nghiệm'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Đăng xuất khỏi Kivo?'),
         content: const Text(
-          'Kivo hiện đang dùng tài khoản thử nghiệm. Đăng xuất sẽ được kích hoạt khi luồng đăng nhập hoàn chỉnh được tích hợp.',
+          'Bạn sẽ cần xác thực lại để tiếp tục hành trình học.',
         ),
         actions: [
           TextButton(
-            onPressed: Navigator.of(context).pop,
-            child: const Text('Đã hiểu'),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Ở lại'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: TextButton.styleFrom(foregroundColor: KivoColors.errorCoral),
+            child: const Text('Đăng xuất'),
           ),
         ],
       ),
     );
+    if (shouldSignOut == true) await controller.signOut();
   }
 }
 
