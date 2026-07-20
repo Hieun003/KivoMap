@@ -96,6 +96,7 @@ class DatabaseEngineService {
     required String userId,
     required String name,
     required String email,
+    String? phoneNumber,
   }) async {
     final userRef = _users.doc(userId);
     final progressRef = _progressRef(userId);
@@ -108,15 +109,19 @@ class DatabaseEngineService {
       if (!userSnapshot.exists) {
         transaction.set(userRef, {
           'name': name,
-          'email': email,
+          if (email.isNotEmpty) 'email': email,
+          if (phoneNumber != null && phoneNumber.isNotEmpty)
+            'phoneNumber': phoneNumber,
           'isNewbieDiscover': true,
           'createdAt': now,
           'updatedAt': now,
         });
       } else {
         transaction.set(userRef, {
-          'name': name,
-          'email': email,
+          if (email.isNotEmpty) 'email': email,
+          if (phoneNumber != null && phoneNumber.isNotEmpty)
+            'phoneNumber': phoneNumber,
+          'lastLoginAt': now,
           'updatedAt': now,
         }, SetOptions(merge: true));
       }
@@ -408,7 +413,9 @@ class DatabaseEngineService {
           'intervalDays': 0,
           'easinessFactor': 2.5,
           'reviewCount': 0,
-          'nextReviewAt': Timestamp.fromDate(DateTime.now().add(const Duration(minutes: 20))),
+          'nextReviewAt': Timestamp.fromDate(
+            DateTime.now().add(const Duration(minutes: 20)),
+          ),
           'lastReviewedAt': null,
           'createdAt': now,
           'updatedAt': now,
@@ -452,17 +459,19 @@ class DatabaseEngineService {
         }
       }
 
-      final nextInterval = nextMastery == 0 ? 0 : switch (nextMastery) {
-        1 => 1,
-        2 => 3,
-        3 => 7,
-        4 => 14,
-        5 => 30,
-        6 => 60,
-        7 => 120,
-        8 => 240,
-        _ => 240,
-      };
+      final nextInterval = nextMastery == 0
+          ? 0
+          : switch (nextMastery) {
+              1 => 1,
+              2 => 3,
+              3 => 7,
+              4 => 14,
+              5 => 30,
+              6 => 60,
+              7 => 120,
+              8 => 240,
+              _ => 240,
+            };
       final nextEase = allCorrect
           ? min(3.0, currentEase + 0.1)
           : max(1.3, currentEase - 0.2);
@@ -486,7 +495,9 @@ class DatabaseEngineService {
         'reviewCount': currentReviewCount + 1,
         'nextReviewAt': nextMastery == 0
             ? Timestamp.fromDate(now.toDate().add(const Duration(minutes: 20)))
-            : Timestamp.fromDate(now.toDate().add(Duration(days: nextInterval))),
+            : Timestamp.fromDate(
+                now.toDate().add(Duration(days: nextInterval)),
+              ),
         'lastReviewedAt': serverNow,
         'updatedAt': serverNow,
       }, SetOptions(merge: true));

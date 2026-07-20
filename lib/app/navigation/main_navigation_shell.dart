@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../features/home/view/home_view.dart';
 import '../../features/profile/view/profile_view.dart';
 import '../../features/treasure/view/treasure_view.dart';
+import '../bindings/home_binding.dart';
 import '../bindings/profile_binding.dart';
 import '../bindings/treasure_binding.dart';
 import '../routes/app_routes.dart';
@@ -48,6 +49,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex.clamp(0, 2);
+    HomeBinding().dependencies();
     TreasureBinding().dependencies();
     ProfileBinding().dependencies();
   }

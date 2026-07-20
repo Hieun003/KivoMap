@@ -13,6 +13,8 @@ class HomeBinding extends Bindings {
     if (!Get.isRegistered<VocabularyLearningService>()) {
       Get.put(VocabularyLearningService(), permanent: true);
     }
-    Get.lazyPut<HomeViewModel>(() => HomeViewModel());
+    if (!Get.isRegistered<HomeViewModel>()) {
+      Get.lazyPut<HomeViewModel>(() => HomeViewModel());
+    }
   }
 }
